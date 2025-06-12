@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import './App.css'
 import Header from './navigation/header'
 import Home from './pages/home'
+import ChurchAdminDashboard from './Dashboard/ChurchAdminDashboard'
 // import About from './pages/About'
 // import Contact from './pages/Contact'
 // import MassTimes from './pages/MassTimes'
@@ -19,6 +20,8 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/admin" element={<ChurchAdminDashboard />} />
+
           {/* <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/mass-times" element={<MassTimes />} />
