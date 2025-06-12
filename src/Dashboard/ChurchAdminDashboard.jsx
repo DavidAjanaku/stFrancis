@@ -7,7 +7,7 @@ import Dashboard from '../components/Dashboard/Dashboard';
 import Homepage from '../components/Homepage/Homepage';
 import MassSchedule from '../components/MassSchedule/MassSchedule';
 import AboutSection from '../components/AboutSection/AboutSectionDashboard';
-import Ministries from '../components/Ministries';
+import Ministries from '../components/MinistriesManagement/Ministries';
 import Events from '../components/EventManagement/EventAdmin';
 import PrayerRequests from '../components/ContactPrayerManagement/ContactPrayerAdmin';
 import Gallery from '../components/GalleryManagement/GalleryManagement';
