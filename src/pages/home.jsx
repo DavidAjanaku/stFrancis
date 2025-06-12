@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import HeroSection from '../components/hero';
 import MassTimes from '../components/massTime';
 import AboutSection from '../components/about';
-import MinistriesSection from '../components/Ministries';
+import MinistriesSection from '../components/MinistriesSection';
 import EventsSection from '../components/Events';
 import LiturgicalCalendar from '../components/liturgicial';
 import PhotoGallery from '../components/PhotoGallery';
