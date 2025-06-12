@@ -4,7 +4,7 @@ import HeroSection from '../components/hero';
 import MassTimes from '../components/massTime';
 import AboutSection from '../components/about';
 import MinistriesSection from '../components/MinistriesSection';
-import EventsSection from '../components/Events';
+import EventsSection from '../components/events';
 import LiturgicalCalendar from '../components/liturgicial';
 import PhotoGallery from '../components/PhotoGallery';
 import ContactPrayer from '../components/contactPrayer';
