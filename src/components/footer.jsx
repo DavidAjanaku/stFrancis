@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Youtube } from 'lucide-react';
 
 const Footer = () => {
   const handleClick = (link) => {
@@ -28,13 +28,13 @@ const Footer = () => {
             </p>
             <div className="flex space-x-3">
               <button onClick={() => handleClick('#')} className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center hover:bg-amber-700 transition-colors">
-                <span className="text-xs">📘</span>
+                <Facebook size={16} />
               </button>
               <button onClick={() => handleClick('#')} className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center hover:bg-amber-700 transition-colors">
-                <span className="text-xs">📷</span>
+                <Instagram size={16} />
               </button>
               <button onClick={() => handleClick('#')} className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center hover:bg-amber-700 transition-colors">
-                <span className="text-xs">📺</span>
+                <Youtube size={16} />
               </button>
             </div>
           </div>
