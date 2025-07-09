@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "title": "Parish Picnic",
+    "date": "2025-06-15",
+    "time": "12:00 PM - 4:00 PM",
+    "description": "Join us for our annual parish picnic with food, games, and fellowship for the whole family.",
+    "location": "Church Grounds",
+    "coordinator": "John Smith"
+  },
+  {
+    "id": 2,
+    "title": "Youth Retreat",
+    "date": "2025-06-22",
+    "time": "All Day",
+    "description": "A weekend retreat for young adults focusing on faith, friendship, and personal growth.",
+    "location": "Retreat Center",
+    "coordinator": "Sarah Johnson"
+  }
+]

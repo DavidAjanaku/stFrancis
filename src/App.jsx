@@ -1,39 +1,164 @@
-// App.jsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import './App.css'
-import Header from './navigation/header'
-import Home from './pages/home'
-import ChurchAdminDashboard from './Dashboard/ChurchAdminDashboard'
-// import About from './pages/About'
-// import Contact from './pages/Contact'
-// import MassTimes from './pages/MassTimes'
-// import Ministries from './pages/Ministries'
-// import Events from './pages/Events'
-// import Gallery from './pages/Gallery'
-// import Prayers from './pages/Prayers'
-// import Donate from './pages/Donate'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
+import React, { useEffect, useState } from 'react';
+import Header from './navigation/header';
+import Home from './pages/home';
+import About from './components/about';
+import Events from './components/events';
+import Blog from './components/post';
+import Contact from './components/contactPrayer';
+import ChurchAdminDashboard from './Dashboard/ChurchAdminDashboard';
+import LoginForm from './components/LoginForm';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState({
+    massSchedule: {
+      sunday: [],
+      weekday: [],
+      confession: [],
+      specialEvents: []
+    }
+  });
+
+useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:5001/api/auth/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifyToken();
+
+    // Fetch mass schedule data
+    const fetchMassSchedule = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/mass-schedule');
+        if (response.ok) {
+          const scheduleData = await response.json();
+          setData(prev => ({
+            ...prev,
+            massSchedule: scheduleData
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch mass schedule:', error);
+      }
+    };
+
+    fetchMassSchedule();
+  }, []);
+
+   const handleLogin = (token) => {
+    localStorage.setItem('token', token);
+    setIsAuthenticated(true);
+  };
+
+   const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch('http://localhost:5001/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+  };
+
+  // Update mass schedule data in parent state
+  const handleSaveMassSchedule = (newData) => {
+    setData(prev => ({
+      ...prev,
+      massSchedule: {
+        sunday: newData.massSchedule.sunday || [],
+        weekday: newData.massSchedule.weekday || [],
+        confession: newData.massSchedule.confession || [],
+        specialEvents: newData.massSchedule.specialEvents || []
+      }
+    }));
+  };
+
+  if (isLoading || isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="App">
-        <Header />
+        <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} />
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/admin" element={<ChurchAdminDashboard />} />
-
-          {/* <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/mass-times" element={<MassTimes />} />
-          <Route path="/ministries" element={<Ministries />} />
+          <Route path="/" element={<Home data={data} />} />
+          <Route path="/about" element={<About />} />
           <Route path="/events" element={<Events />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/prayers" element={<Prayers />} />
-          <Route path="/donate" element={<Donate />} /> */}
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/admin" replace />
+              ) : (
+                <LoginForm onLogin={handleLogin} />
+              )
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              isAuthenticated ? (
+                <ChurchAdminDashboard data={data} onSaveMassSchedule={handleSaveMassSchedule} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </Router>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,17 +1,99 @@
-// components/AboutSection/AboutSection.js
-import React from 'react';
-import { Info, Edit3, Image, Users, Heart, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Info, Edit3, Image } from 'lucide-react';
 import { SectionHeader } from '../shared/SharedComponents';
 import AboutSectionEditModal from './AboutSectionEditModal';
 
-const AboutSection = ({ data, setData, editingItem, setEditingItem }) => {
-  const handleSaveAboutSection = (updatedData) => {
-    setData(updatedData);
-  };
+const AboutSectionDashboard = ({ editingItem, setEditingItem }) => {
+  const [aboutData, setAboutData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleCloseModal = () => {
+  useEffect(() => {
+    const fetchAboutData = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/about-section');
+        if (!response.ok) throw new Error('Failed to fetch about section data');
+        const data = await response.json();
+        setAboutData(data);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAboutData();
+  }, []);
+
+const handleSaveAboutSection = async (updatedData) => {
+  try {
+    const response = await fetch('http://localhost:5001/api/about-section', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    });
+
+    if (!response.ok) {
+      // Try to get the error message from the response
+      const errorResponse = await response.json();
+      const errorMsg = errorResponse.message || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    const savedData = await response.json();
+    setAboutData(savedData);
     setEditingItem(null);
-  };
+  } catch (err) {
+    console.error('Save error details:', {
+      message: err.message,
+      stack: err.stack
+    });
+    alert(`Save failed: ${err.message}`);
+  }
+};
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700">Loading about section...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <SectionHeader
+          title="About Our Parish"
+          icon={Info}
+          buttonIcon={Edit3}
+          buttonText="Edit About Section"
+          onButtonClick={() => setEditingItem('about-section')}
+        />
+        <div className="text-center py-10">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-lg text-red-600 mb-2">Error Loading About Section</p>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -25,42 +107,14 @@ const AboutSection = ({ data, setData, editingItem, setEditingItem }) => {
         />
         
         <div className="space-y-6">
-          {/* Parish Overview */}
+          {/* Text and Image Preview */}
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                  <Users className="w-5 h-5 mr-2 text-blue-600" />
-                  Parish Information
-                </h3>
-                <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-                  <div>
-                    <span className="font-medium text-blue-800">Parish Name:</span>
-                    <p className="text-blue-700">{data.aboutSection?.parishName || 'St. Mary\'s Parish'}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-blue-800">Established:</span>
-                    <p className="text-blue-700">{data.aboutSection?.established || '1948'}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-blue-800">Years of Service:</span>
-                    <p className="text-blue-700">{data.aboutSection?.yearsOfService || '75+ years'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                  <Heart className="w-5 h-5 mr-2 text-red-600" />
-                  Mission Statement
-                </h3>
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <p className="text-red-700 leading-relaxed">
-                    {data.aboutSection?.mission || 
-                      'Our mission is to be a welcoming community where all people can encounter Jesus Christ, grow in faith, and serve others with love and compassion.'
-                    }
-                  </p>
-                </div>
+            <div>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">About Text</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {aboutData.mainDescription}
+                </p>
               </div>
             </div>
 
@@ -70,10 +124,10 @@ const AboutSection = ({ data, setData, editingItem, setEditingItem }) => {
                 Parish Image
               </h3>
               <div className="bg-green-50 p-4 rounded-lg">
-                {data.aboutSection?.image ? (
+                {aboutData.image ? (
                   <div className="relative">
                     <img
-                      src={data.aboutSection.image}
+                      src={aboutData.image}
                       alt="Parish"
                       className="w-full h-48 object-cover rounded-lg shadow-md"
                     />
@@ -92,85 +146,18 @@ const AboutSection = ({ data, setData, editingItem, setEditingItem }) => {
               </div>
             </div>
           </div>
-
-          {/* Parish Description */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-              <Info className="w-5 h-5 mr-2 text-purple-600" />
-              Parish Description
-            </h3>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium text-purple-800">Main Description:</span>
-                  <p className="text-purple-700 leading-relaxed mt-1">
-                    {data.aboutSection?.mainDescription || 
-                      'St. Mary\'s Parish has been serving our community for over 75 years. We are a vibrant Catholic community committed to spreading the Gospel through worship, service, and fellowship.'
-                    }
-                  </p>
-                </div>
-                
-                {data.aboutSection?.additionalDescription && (
-                  <div>
-                    <span className="font-medium text-purple-800">Additional Information:</span>
-                    <p className="text-purple-700 leading-relaxed mt-1">
-                      {data.aboutSection.additionalDescription}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Parish Statistics */}
-          {data.aboutSection?.statistics && data.aboutSection.statistics.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                <Calendar className="w-5 h-5 mr-2 text-amber-600" />
-                Parish Statistics
-              </h3>
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {data.aboutSection.statistics.map((stat, index) => (
-                    <div key={index} className="text-center">
-                      <div className="text-2xl font-bold text-amber-800">{stat.value}</div>
-                      <div className="text-amber-600 text-sm">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Call to Action */}
-          <div className="bg-gradient-to-r from-red-50 to-blue-50 p-4 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold text-gray-800">Learn More Button</h4>
-                <p className="text-gray-600 text-sm">
-                  Button Text: {data.aboutSection?.buttonText || 'Learn More About Us'}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  Button Link: {data.aboutSection?.buttonLink || '/about'}
-                </p>
-              </div>
-              <button className="bg-red-900 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition-colors text-sm">
-                {data.aboutSection?.buttonText || 'Learn More About Us'}
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Edit Modal */}
       <AboutSectionEditModal
         isOpen={editingItem === 'about-section'}
-        onClose={handleCloseModal}
-        data={data}
+        onClose={() => setEditingItem(null)}
+        data={aboutData}
         onSave={handleSaveAboutSection}
       />
     </>
   );
 };
 
-export default AboutSection;
+export default AboutSectionDashboard;

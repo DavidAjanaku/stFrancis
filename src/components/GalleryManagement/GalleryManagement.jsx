@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit3, Trash2, Save, X, Upload, Eye, Move, ArrowUp, ArrowDown } from 'lucide-react';
 
-const GalleryManagement = ({ data, setData }) => {
-  const [images, setImages] = useState(data?.gallery || []);
+const GalleryManagement = () => {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isAddingImage, setIsAddingImage] = useState(false);
   const [editingImage, setEditingImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [newImage, setNewImage] = useState({
-    url: '',
     title: '',
     description: '',
-    category: 'general'
+    category: 'general',
+    file: null,
+    previewUrl: null
   });
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
 
   const categories = [
     'general',
@@ -24,78 +30,206 @@ const GalleryManagement = ({ data, setData }) => {
   ];
 
   useEffect(() => {
-    setImages(data?.gallery || []);
-  }, [data]);
+    fetchGalleryImages();
+  }, []);
 
-  const handleAddImage = () => {
-    if (newImage.url.trim()) {
-      const imageWithId = {
-        ...newImage,
-        id: Date.now().toString(),
-        dateAdded: new Date().toISOString().split('T')[0],
-        isActive: true
-      };
-      
-      const updatedImages = [...images, imageWithId];
-      setImages(updatedImages);
-      
-      // Update parent data
-      setData(prev => ({
+  // Helper to get full image URL
+  const getFullImageUrl = (url) => {
+    if (!url) return '';
+    
+    // If it's a blob URL (preview) or base64 data URL, return as-is
+    if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+    
+    // For server images, use as-is (server returns full URLs)
+    return url;
+  };
+
+  const fetchGalleryImages = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/gallery');
+      if (!response.ok) throw new Error('Failed to fetch gallery images');
+      const data = await response.json();
+      setImages(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewImage(prev => ({
         ...prev,
-        gallery: updatedImages
+        file,
+        previewUrl: URL.createObjectURL(file)
       }));
+    }
+  };
+
+  const handleEditFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setEditingImage(prev => ({
+        ...prev,
+        file,
+        previewUrl: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const response = await fetch('http://localhost:5001/api/gallery/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed');
+      }
+      
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  };
+
+  const handleAddImage = async () => {
+    if (!newImage.file) {
+      setError('Please select an image file');
+      return;
+    }
+    
+    try {
+      setUploading(true);
+      
+      // Upload image
+      const imageUrl = await uploadImage(newImage.file);
+      
+      // Create gallery item
+      const response = await fetch('http://localhost:5001/api/gallery', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: imageUrl,
+          title: newImage.title,
+          description: newImage.description,
+          category: newImage.category,
+          isActive: true
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to add image');
+      
+      const addedImage = await response.json();
+      setImages(prev => [...prev, addedImage]);
       
       // Reset form
       setNewImage({
-        url: '',
         title: '',
         description: '',
-        category: 'general'
+        category: 'general',
+        file: null,
+        previewUrl: null
       });
       setIsAddingImage(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleEditImage = (image) => {
-    setEditingImage({ ...image });
-  };
-
-  const handleSaveEdit = () => {
-    const updatedImages = images.map(img => 
-      img.id === editingImage.id ? editingImage : img
-    );
-    setImages(updatedImages);
+  const handleSaveEdit = async () => {
+    if (!editingImage) return;
     
-    setData(prev => ({
-      ...prev,
-      gallery: updatedImages
-    }));
-    
-    setEditingImage(null);
-  };
-
-  const handleDeleteImage = (imageId) => {
-    if (window.confirm('Are you sure you want to delete this image?')) {
-      const updatedImages = images.filter(img => img.id !== imageId);
-      setImages(updatedImages);
+    try {
+      setUploading(true);
+      let imageUrl = editingImage.url;
       
-      setData(prev => ({
-        ...prev,
-        gallery: updatedImages
-      }));
+      // If a new file was selected, upload it
+      if (editingImage.file) {
+        imageUrl = await uploadImage(editingImage.file);
+      }
+      
+      // Update gallery item
+      const response = await fetch(`http://localhost:5001/api/gallery/${editingImage.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...editingImage,
+          url: imageUrl
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update image');
+      
+      const updatedImage = await response.json();
+      setImages(prev => prev.map(img => 
+        img.id === updatedImage.id ? updatedImage : img
+      ));
+      
+      setEditingImage(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
-  const toggleImageStatus = (imageId) => {
-    const updatedImages = images.map(img => 
-      img.id === imageId ? { ...img, isActive: !img.isActive } : img
-    );
-    setImages(updatedImages);
+  const handleDeleteImage = async (imageId) => {
+    if (window.confirm('Are you sure you want to delete this image?')) {
+      try {
+        const response = await fetch(`http://localhost:5001/api/gallery/${imageId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete image');
+        
+        setImages(prev => prev.filter(img => img.id !== imageId));
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
+  const toggleImageStatus = async (imageId) => {
+    const image = images.find(img => img.id === imageId);
+    if (!image) return;
     
-    setData(prev => ({
-      ...prev,
-      gallery: updatedImages
-    }));
+    const updatedStatus = !image.isActive;
+    
+    try {
+      const response = await fetch(`http://localhost:5001/api/gallery/${imageId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...image, isActive: updatedStatus })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update image status');
+      
+      const updatedImage = await response.json();
+      setImages(prev => prev.map(img => 
+        img.id === updatedImage.id ? updatedImage : img
+      ));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const moveImage = (imageId, direction) => {
@@ -113,15 +247,43 @@ const GalleryManagement = ({ data, setData }) => {
     [updatedImages[newIndex], updatedImages[currentIndex]];
     
     setImages(updatedImages);
-    setData(prev => ({
-      ...prev,
-      gallery: updatedImages
-    }));
   };
 
   const handleImageError = (e) => {
+    console.error('Failed to load image:', e.target.src);
     e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4=';
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700">Loading gallery...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-lg text-red-600 mb-2">Error Loading Gallery</p>
+        <p className="text-gray-700 mb-4">{error}</p>
+        <button 
+          onClick={fetchGalleryImages}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -180,18 +342,47 @@ const GalleryManagement = ({ data, setData }) => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL *
+                Upload Image *
               </label>
-              <input
-                type="url"
-                value={newImage.url}
-                onChange={(e) => setNewImage(prev => ({ ...prev, url: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com/image.jpg"
-              />
+              <div className="flex items-center justify-center w-full">
+                <label 
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-3 text-gray-400" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                  </div>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    className="hidden" 
+                    onChange={handleFileChange}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
             </div>
+            
+            {newImage.previewUrl && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Preview
+                </label>
+                <img
+                  src={getFullImageUrl(newImage.previewUrl)}
+                  alt="Preview"
+                  className="w-32 h-32 object-contain rounded border"
+                />
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -223,32 +414,18 @@ const GalleryManagement = ({ data, setData }) => {
               </select>
             </div>
             
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
               </label>
-              <input
-                type="text"
+              <textarea
                 value={newImage.description}
                 onChange={(e) => setNewImage(prev => ({ ...prev, description: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Brief description"
+                rows="2"
               />
             </div>
-            
-            {newImage.url && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Preview
-                </label>
-                <img
-                  src={newImage.url}
-                  alt="Preview"
-                  className="w-32 h-24 object-cover rounded border"
-                  onError={handleImageError}
-                />
-              </div>
-            )}
           </div>
           
           <div className="flex justify-end space-x-3 mt-4">
@@ -260,12 +437,18 @@ const GalleryManagement = ({ data, setData }) => {
             </button>
             <button
               onClick={handleAddImage}
-              disabled={!newImage.url.trim()}
+              disabled={!newImage.file || uploading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Image
+              {uploading ? 'Uploading...' : 'Add Image'}
             </button>
           </div>
+          
+          {error && (
+            <div className="mt-4 p-2 bg-red-100 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
         </div>
       )}
 
@@ -287,7 +470,7 @@ const GalleryManagement = ({ data, setData }) => {
               <div key={image.id} className="border rounded-lg overflow-hidden">
                 <div className="relative">
                   <img
-                    src={image.url}
+                    src={getFullImageUrl(image.url)}
                     alt={image.title || `Gallery image ${index + 1}`}
                     className="w-full h-48 object-cover"
                     onError={handleImageError}
@@ -355,7 +538,7 @@ const GalleryManagement = ({ data, setData }) => {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleEditImage(image)}
+                        onClick={() => setEditingImage({ ...image, file: null, previewUrl: null })}
                         className="p-1 text-gray-400 hover:text-blue-600"
                         title="Edit"
                       >
@@ -395,15 +578,41 @@ const GalleryManagement = ({ data, setData }) => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Image URL
+                    Change Image
                   </label>
-                  <input
-                    type="url"
-                    value={editingImage.url}
-                    onChange={(e) => setEditingImage(prev => ({ ...prev, url: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex items-center justify-center w-full">
+                    <label 
+                      className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                      onClick={() => editFileInputRef.current.click()}
+                    >
+                      <div className="flex flex-col items-center justify-center pt-3 pb-4">
+                        <Upload className="w-6 h-6 mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-500">Click to change image</p>
+                      </div>
+                      <input 
+                        ref={editFileInputRef}
+                        type="file" 
+                        className="hidden" 
+                        onChange={handleEditFileChange}
+                        accept="image/*"
+                      />
+                    </label>
+                  </div>
                 </div>
+                
+                {(editingImage.previewUrl || editingImage.url) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preview
+                    </label>
+                    <img
+                      src={editingImage.previewUrl || getFullImageUrl(editingImage.url)}
+                      alt="Preview"
+                      className="w-full h-32 object-contain rounded border"
+                      onError={handleImageError}
+                    />
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -445,20 +654,6 @@ const GalleryManagement = ({ data, setData }) => {
                     rows="3"
                   />
                 </div>
-                
-                {editingImage.url && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preview
-                    </label>
-                    <img
-                      src={editingImage.url}
-                      alt="Preview"
-                      className="w-full h-32 object-cover rounded border"
-                      onError={handleImageError}
-                    />
-                  </div>
-                )}
               </div>
               
               <div className="flex justify-end space-x-3 mt-6">
@@ -470,11 +665,18 @@ const GalleryManagement = ({ data, setData }) => {
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={uploading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Save Changes
+                  {uploading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
+              
+              {error && (
+                <div className="mt-4 p-2 bg-red-100 text-red-700 rounded text-sm">
+                  {error}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -496,7 +698,7 @@ const GalleryManagement = ({ data, setData }) => {
               </div>
               
               <img
-                src={previewImage.url}
+                src={getFullImageUrl(previewImage.url)}
                 alt={previewImage.title}
                 className="w-full max-h-96 object-contain rounded"
                 onError={handleImageError}

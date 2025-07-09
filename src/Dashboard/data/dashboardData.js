@@ -10,7 +10,7 @@ export const dashboardData = {
         { time: "7:00 AM", type: "Morning Mass" },
         { time: "9:00 AM", type: "Family Mass" },
         { time: "11:00 AM", type: "High Mass" },
-        { time: "6:00 PM", type: "Evening Mass" }
+        { time: "6:00 PMsss", type: "Evening Mass" }
       ],
       weekday: [
         { day: "Monday-Friday", time: "7:00 AM", type: "Morning Mass" },

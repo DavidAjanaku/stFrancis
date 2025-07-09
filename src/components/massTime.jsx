@@ -1,42 +1,94 @@
-import React from 'react';
+// components/MassScheduleComponent.js
+import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, MapPin, Users } from 'lucide-react';
 
 const MassScheduleComponent = () => {
-  const massSchedule = [
-    {
-      day: 'Sunday',
-      masses: [
-        { time: '6:30 AM', type: 'First Mass', language: 'English' },
-        { time: '8:00 AM', type: 'Second Mass', language: 'English' },
-        { time: '10:00 AM', type: 'Main Mass', language: 'English', special: 'Children\'s Mass' },
-        { time: '5:00 PM', type: 'Evening Mass', language: 'English' }
-      ],
-      isToday: false
-    },
-    {
-      day: 'Monday - Friday',
-      masses: [
-        { time: '6:00 AM', type: 'Morning Mass', language: 'English' },
-        { time: '6:00 PM', type: 'Evening Mass', language: 'English' }
-      ],
-      isToday: true
-    },
-    {
-      day: 'Saturday',
-      masses: [
-        { time: '6:00 AM', type: 'Morning Mass', language: 'English' },
-        { time: '6:00 PM', type: 'Vigil Mass', language: 'English', special: 'Sunday Vigil' }
-      ],
-      isToday: false
-    }
-  ];
+  const [massSchedule, setMassSchedule] = useState([]);
+  const [specialMasses, setSpecialMasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [location, setLocation] = useState({
+    name: 'St. Francis Catholic Church, Oregun',
+    address: 'Lagos, Nigeria'
+  });
 
-  const specialMasses = [
-    { occasion: 'Holy Days of Obligation', time: '6:00 AM, 12:00 PM, 6:00 PM' },
-    { occasion: 'Good Friday', time: '3:00 PM (Passion Service)' },
-    { occasion: 'Easter Vigil', time: '8:00 PM (Saturday)' },
-    { occasion: 'Christmas Eve', time: '6:00 PM, 10:00 PM (Midnight Mass)' }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Use the full backend URL
+        const response = await fetch('http://localhost:5001/api/mass-schedule');
+        console.log(response);
+        
+        if (!response.ok) throw new Error('Failed to fetch mass schedule');
+        
+        const data = await response.json();
+        console.log(data);
+        
+        
+        // Transform data to match frontend structure
+        const today = new Date().getDay();
+        const transformed = [
+          {
+            day: 'Sunday',
+            masses: data.sunday || [],
+            isToday: today === 0
+          },
+          {
+            day: 'Monday - Friday',
+            masses: data.weekday || [],
+            isToday: today >= 1 && today <= 5
+          },
+          {
+            day: 'Saturday',
+            masses: data.weekday.filter(m => m.day && m.day.includes('Saturday')) || [],
+            isToday: today === 6
+          }
+        ];
+        
+        setMassSchedule(transformed);
+        setSpecialMasses(data.specialEvents || []);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 min-h-screen bg-amber-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-amber-900 mx-auto mb-4"></div>
+          <p className="text-xl text-amber-900">Loading Mass Schedule...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 min-h-screen bg-amber-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-xl text-red-600 mb-2">Error Loading Schedule</p>
+          <p className="text-amber-800 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-amber-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-800 transition-colors shadow-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen bg-amber-50">
@@ -75,25 +127,31 @@ const MassScheduleComponent = () => {
             </div>
             
             <div className="p-6 space-y-4">
-              {daySchedule.masses.map((mass, massIndex) => (
-                <div key={massIndex} className="flex items-start space-x-4 p-4 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-200">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center border border-amber-300">
-                      <Clock className="w-6 h-6 text-amber-900" />
+              {daySchedule.masses.length > 0 ? (
+                daySchedule.masses.map((mass, massIndex) => (
+                  <div key={massIndex} className="flex items-start space-x-4 p-4 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-200">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center border border-amber-300">
+                        <Clock className="w-6 h-6 text-amber-900" />
+                      </div>
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="text-lg font-semibold text-amber-900">{mass.time}</h4>
+                      <p className="text-amber-800">{mass.type}</p>
+                      {mass.special && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-200 text-amber-900 mt-1 border border-amber-300">
+                          {mass.special}
+                        </span>
+                      )}
+                      <p className="text-sm text-amber-700 mt-1">Language: {mass.language || 'English'}</p>
                     </div>
                   </div>
-                  <div className="flex-grow">
-                    <h4 className="text-lg font-semibold text-amber-900">{mass.time}</h4>
-                    <p className="text-amber-800">{mass.type}</p>
-                    {mass.special && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-200 text-amber-900 mt-1 border border-amber-300">
-                        {mass.special}
-                      </span>
-                    )}
-                    <p className="text-sm text-amber-700 mt-1">Language: {mass.language}</p>
-                  </div>
+                ))
+              ) : (
+                <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-center text-amber-700">
+                  No masses scheduled
                 </div>
-              ))}
+              )}
             </div>
           </div>
         ))}
@@ -110,15 +168,21 @@ const MassScheduleComponent = () => {
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
-          {specialMasses.map((special, index) => (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-amber-200 hover:border-amber-400 transition-colors">
-              <h4 className="text-lg font-semibold text-amber-900 mb-2">{special.occasion}</h4>
-              <div className="flex items-center text-amber-800">
-                <Clock className="w-4 h-4 mr-2 text-amber-900" />
-                <span>{special.time}</span>
+          {specialMasses.length > 0 ? (
+            specialMasses.map((special, index) => (
+              <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-amber-200 hover:border-amber-400 transition-colors">
+                <h4 className="text-lg font-semibold text-amber-900 mb-2">{special.name}</h4>
+                <div className="flex items-center text-amber-800">
+                  <Clock className="w-4 h-4 mr-2 text-amber-900" />
+                  <span>{special.time}</span>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="col-span-2 bg-white rounded-xl p-8 text-center border border-amber-200">
+              <p className="text-amber-700">No special events scheduled</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -130,8 +194,8 @@ const MassScheduleComponent = () => {
             <h3 className="text-xl font-bold text-amber-900">Location</h3>
           </div>
           <p className="text-amber-800 mb-4">
-            St. Francis Catholic Church, Oregun<br />
-            Lagos, Nigeria
+            {location.name}<br />
+            {location.address}
           </p>
           <button className="bg-amber-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-800 transition-colors shadow-sm">
             Get Directions

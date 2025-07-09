@@ -13,6 +13,10 @@ import PrayerRequests from '../components/ContactPrayerManagement/ContactPrayerA
 import Gallery from '../components/GalleryManagement/GalleryManagement';
 import { dashboardData } from '../Dashboard/data/dashboardData';
 import { menuItems } from '../Dashboard/data/menuItems';
+import DonationAdmin from '../components/Dashboard/Post/Post';
+import LiturgicalCalendarAdmin from './LiturgicalCalendarAdmin/LiturgicalCalendarAdmin';
+import HomepageAdmin from '../components/Homepage/Homepage';
+import ContactAdmin from '../components/Dashboard/ContactAdmin/ContactAdmin';
 
 const ChurchAdminDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,7 +37,7 @@ const ChurchAdminDashboard = () => {
       case 'dashboard':
         return <Dashboard {...commonProps} />;
       case 'homepage':
-        return <Homepage {...commonProps} />;
+        return <HomepageAdmin {...commonProps} />;
       case 'mass-schedule':
         return <MassSchedule {...commonProps} />;
       case 'about-us':
@@ -44,6 +48,15 @@ const ChurchAdminDashboard = () => {
         return <Events {...commonProps} />;
       case 'prayer-requests':
         return <PrayerRequests {...commonProps} />;
+         case 'post':
+        return <DonationAdmin {...commonProps} />;
+          case 'prayer-requests':
+        return <PrayerRequests {...commonProps} />;
+         case 'liturgical':
+        return <LiturgicalCalendarAdmin {...commonProps} />;  
+
+          case 'contact':
+        return <ContactAdmin {...commonProps} />;  
       case 'gallery':
         return <Gallery {...commonProps} />;
       default:

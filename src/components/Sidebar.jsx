@@ -3,15 +3,16 @@ import React from 'react';
 import { Church, Menu, LogOut } from 'lucide-react';
 import { menuItems } from '../Dashboard/data/menuItems';
 
-const Sidebar = ({ 
-  sidebarOpen, 
-  setSidebarOpen, 
-  activeSection, 
-  setActiveSection, 
-  setIsAuthenticated 
+const Sidebar = ({
+  sidebarOpen,
+  setSidebarOpen,
+  activeSection,
+  setActiveSection,
+  setIsAuthenticated
 }) => {
   return (
-    <div className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-white shadow-lg transition-all duration-300`}>
+    <div className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-white shadow-lg transition-all duration-300 relative flex flex-col h-full`}>
+      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         {sidebarOpen && (
           <div className="flex items-center gap-2">
@@ -26,8 +27,9 @@ const Sidebar = ({
           <Menu className="h-5 w-5" />
         </button>
       </div>
-      
-      <nav className="p-4">
+
+      {/* Navigation - takes up remaining space */}
+      <nav className="p-4 flex-1">
         <ul className="space-y-2">
           {menuItems.map(item => {
             const Icon = item.icon;
@@ -49,18 +51,24 @@ const Sidebar = ({
           })}
         </ul>
       </nav>
-      
-      {sidebarOpen && (
-        <div className="absolute bottom-4 left-4 right-4">
-          <button
-            onClick={() => setIsAuthenticated(false)}
-            className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="h-5 w-5" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      )}
+
+      {/* Sign Out Button - Always at bottom */}
+      <div className="p-4 border-t bg-gray-50">
+        <button
+          onClick={() => setIsAuthenticated(false)}
+          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group ${
+            sidebarOpen 
+              ? 'text-red-600 hover:bg-red-50 hover:text-red-700 hover:shadow-sm' 
+              : 'text-red-600 hover:bg-red-50 justify-center'
+          }`}
+          title={!sidebarOpen ? 'Sign Out' : ''}
+        >
+          <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform" />
+          {sidebarOpen && (
+            <span className="font-medium">Sign Out</span>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

@@ -3,49 +3,36 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const HeroBanner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
 
-  const slides = [
-    {
-      id: 1,
-      title: "Welcome to St. Francis Catholic Church",
-      subtitle: "A Place of Worship, Fellowship & Service",
-      description: "Join us for meaningful worship and grow in faith with our vibrant parish community in Oregun, Lagos.",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=600&fit=crop",
-      cta: {
-        primary: { text: "Join Us for Mass", link: "/mass-sacraments" },
-        secondary: { text: "Learn More", link: "/about" }
+  useEffect(() => {
+    const fetchSlides = async () => {
+      try {
+        const response = await fetch(`${backendUrl}/api/hero-slides`);
+        if (!response.ok) throw new Error('Failed to fetch slides');
+        
+        const data = await response.json();
+        setSlides(data);
+      } catch (error) {
+        console.error('Error fetching hero slides:', error);
+      } finally {
+        setLoading(false);
       }
-    },
-    {
-      id: 2,
-      title: "Christmas Season Celebrations",
-      subtitle: "Celebrating the Birth of Our Savior",
-      description: "Join us for special Christmas Masses, carol services, and community celebrations throughout the season.",
-      image: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=1200&h=600&fit=crop",
-      cta: {
-        primary: { text: "View Schedule", link: "/events" },
-        secondary: { text: "Christmas Programs", link: "/events" }
-      }
-    },
-    {
-      id: 3,
-      title: "Join Our Societies & Ministries",
-      subtitle: "Grow in Faith Through Fellowship",
-      description: "Discover your calling and serve God through our various societies including CMO, CWO, CYO, and more.",
-      image: "https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200&h=600&fit=crop",
-      cta: {
-        primary: { text: "Join a Society", link: "/join-society" },
-        secondary: { text: "View All Societies", link: "/societies" }
-      }
-    }
-  ];
+    };
+    
+    fetchSlides();
+  }, []);
 
   // Auto-advance slides
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    if (slides.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
   }, [slides.length]);
 
   const nextSlide = () => {
@@ -65,13 +52,27 @@ const HeroBanner = () => {
     console.log(`Navigation to: ${link}`);
   };
 
+  if (loading) {
+    return (
+      <div className="relative h-screen bg-gray-200 animate-pulse">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p>Loading hero banner...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (slides.length === 0) {
+    return null; // Or a placeholder
+  }
+
   return (
     <section className="relative h-screen overflow-hidden">
       {/* Slides */}
       <div className="relative h-full">
         {slides.map((slide, index) => (
           <div
-            key={slide.id}
+            key={slide._id}
             className={`absolute inset-0 transition-opacity duration-1000 ${
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
@@ -80,7 +81,9 @@ const HeroBanner = () => {
             <div className="absolute inset-0">
               <div className="w-full h-full bg-gradient-to-r from-amber-900/80 to-yellow-800/60"></div>
               <img
-                src={slide.image}
+                src={slide.image.startsWith('/uploads') 
+                  ? `${backendUrl}${slide.image}` 
+                  : slide.image}
                 alt={slide.title}
                 className="w-full h-full object-cover"
               />

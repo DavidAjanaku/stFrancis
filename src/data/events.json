@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Parish Picnic",
+    "date": "2025-07-17",
+    "time": "9:00 AM",
+    "description": "Join us for our annual parish picnic with food, games, and fellowship for the whole family.",
+    "location": "St. Francis Catholic Church, Oregun, Ikeja Lagos",
+    "coordinator": "John Smith",
+    "id": 1752068283470
+  },
+  {
+    "title": "Youth Ministry Meeting",
+    "date": "2025-07-24",
+    "time": "6:00 PM",
+    "description": "Monthly gathering for young adults (18-35) featuring prayer, discussion, and community service planning.\n",
+    "location": "St. Francis Catholic Church, Oregun, Ikeja Lagos",
+    "coordinator": "Will",
+    "id": 1752068427289
+  }
+]

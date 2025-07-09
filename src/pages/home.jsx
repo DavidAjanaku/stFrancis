@@ -9,7 +9,7 @@ import LiturgicalCalendar from '../components/liturgicial';
 import PhotoGallery from '../components/PhotoGallery';
 import ContactPrayer from '../components/contactPrayer';
 import NewsletterSignup from '../components/newsletter';
-import DonationSection from '../components/donation';
+import DonationSection from '../components/post';
 import Footer from '../components/footer';
 import DarkModeToggle from '../components/darkmodal';
 import ImageModal from '../components/imageModal';

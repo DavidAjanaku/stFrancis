@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Edit2, Trash2, Save, X, Clock, MapPin, Users } from 'lucide-react';
 
-const Events = ({ data, setData, editingItem, setEditingItem }) => {
+const Events = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
@@ -12,50 +17,94 @@ const Events = ({ data, setData, editingItem, setEditingItem }) => {
     coordinator: ''
   });
 
-  const handleAddEvent = () => {
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/events');
+        if (!response.ok) throw new Error('Failed to fetch events');
+        
+        const data = await response.json();
+        setEvents(data);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  const handleAddEvent = async () => {
     if (newEvent.title && newEvent.date && newEvent.description) {
-      const event = {
-        id: Date.now(),
-        ...newEvent
-      };
-      
-      setData(prev => ({
-        ...prev,
-        events: [...prev.events, event]
-      }));
-      
-      setNewEvent({
-        title: '',
-        date: '',
-        time: '',
-        description: '',
-        location: '',
-        coordinator: ''
-      });
-      setShowAddForm(false);
+      try {
+        const response = await fetch('http://localhost:5001/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newEvent)
+        });
+        
+        if (!response.ok) throw new Error('Failed to add event');
+        
+        const addedEvent = await response.json();
+        setEvents(prev => [...prev, addedEvent]);
+        
+        setNewEvent({
+          title: '',
+          date: '',
+          time: '',
+          description: '',
+          location: '',
+          coordinator: ''
+        });
+        setShowAddForm(false);
+      } catch (err) {
+        setError(err.message);
+      }
     }
   };
 
-  const handleEditEvent = (event) => {
-    setEditingItem({ ...event });
+  const handleSaveEdit = async () => {
+    if (editingEvent.title && editingEvent.date && editingEvent.description) {
+      try {
+        const response = await fetch(`http://localhost:5001/api/events/${editingEvent.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editingEvent)
+        });
+        
+        if (!response.ok) throw new Error('Failed to update event');
+        
+        const updatedEvent = await response.json();
+        setEvents(prev => prev.map(event => 
+          event.id === updatedEvent.id ? updatedEvent : event
+        ));
+        
+        setEditingEvent(null);
+      } catch (err) {
+        setError(err.message);
+      }
+    }
   };
 
-  const handleSaveEdit = () => {
-    setData(prev => ({
-      ...prev,
-      events: prev.events.map(event => 
-        event.id === editingItem.id ? editingItem : event
-      )
-    }));
-    setEditingItem(null);
-  };
-
-  const handleDeleteEvent = (eventId) => {
+  const handleDeleteEvent = async (eventId) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
-      setData(prev => ({
-        ...prev,
-        events: prev.events.filter(event => event.id !== eventId)
-      }));
+      try {
+        const response = await fetch(`http://localhost:5001/api/events/${eventId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete event');
+        
+        setEvents(prev => prev.filter(event => event.id !== eventId));
+      } catch (err) {
+        setError(err.message);
+      }
     }
   };
 
@@ -75,8 +124,39 @@ const Events = ({ data, setData, editingItem, setEditingItem }) => {
     return eventDate >= today;
   };
 
-  const upcomingEvents = data.events.filter(event => isUpcoming(event.date));
-  const pastEvents = data.events.filter(event => !isUpcoming(event.date));
+  const upcomingEvents = events.filter(event => isUpcoming(event.date));
+  const pastEvents = events.filter(event => !isUpcoming(event.date));
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-lg text-red-600 mb-2">Error Loading Events</p>
+        <p className="text-gray-700 mb-4">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -101,7 +181,7 @@ const Events = ({ data, setData, editingItem, setEditingItem }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Events</p>
-              <p className="text-3xl font-bold text-gray-900">{data.events.length}</p>
+              <p className="text-3xl font-bold text-gray-900">{events.length}</p>
             </div>
             <Calendar className="h-8 w-8 text-blue-600" />
           </div>
@@ -223,78 +303,90 @@ const Events = ({ data, setData, editingItem, setEditingItem }) => {
             <div className="space-y-4">
               {upcomingEvents.map((event) => (
                 <div key={event.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  {editingItem && editingItem.id === event.id ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <input
-                            type="text"
-                            value={editingItem.title}
-                            onChange={(e) => setEditingItem({...editingItem, title: e.target.value})}
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="date"
-                            value={editingItem.date}
-                            onChange={(e) => setEditingItem({...editingItem, date: e.target.value})}
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="text"
-                            value={editingItem.time}
-                            onChange={(e) => setEditingItem({...editingItem, time: e.target.value})}
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Time"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="text"
-                            value={editingItem.location || ''}
-                            onChange={(e) => setEditingItem({...editingItem, location: e.target.value})}
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Location"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="text"
-                            value={editingItem.coordinator || ''}
-                            onChange={(e) => setEditingItem({...editingItem, coordinator: e.target.value})}
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Coordinator"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <textarea
-                            value={editingItem.description}
-                            onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                            rows={2}
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleSaveEdit}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-1"
-                        >
-                          <Save className="h-4 w-4" />
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingItem(null)}
-                          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-1"
-                        >
-                          <X className="h-4 w-4" />
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+                  {editingEvent && editingEvent.id === event.id ? (
+                     <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+        <input
+          type="text"
+          value={editingEvent.title}
+          // FIX: Changed setEditingItem to setEditingEvent
+          onChange={(e) => setEditingEvent({...editingEvent, title: e.target.value})}
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+        <input
+          type="date"
+          value={editingEvent.date}
+          // FIX: Changed setEditingItem to setEditingEvent
+          onChange={(e) => setEditingEvent({...editingEvent, date: e.target.value})}
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+        <input
+          type="text"
+          value={editingEvent.time}
+          // FIX: Changed setEditingItem to setEditingEvent
+          onChange={(e) => setEditingEvent({...editingEvent, time: e.target.value})}
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Time"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+        <input
+          type="text"
+          value={editingEvent.location || ''}
+          // FIX: Changed setEditingItem to setEditingEvent
+          onChange={(e) => setEditingEvent({...editingEvent, location: e.target.value})}
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Location"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Coordinator</label>
+        <input
+          type="text"
+          value={editingEvent.coordinator || ''}
+          // FIX: Changed setEditingItem to setEditingEvent
+          onChange={(e) => setEditingEvent({...editingEvent, coordinator: e.target.value})}
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Coordinator"
+        />
+      </div>
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <textarea
+          value={editingEvent.description}
+          // FIX: Changed setEditingItem to setEditingEvent
+          onChange={(e) => setEditingEvent({...editingEvent, description: e.target.value})}
+          rows={2}
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <button
+        onClick={handleSaveEdit}
+        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-1"
+      >
+        <Save className="h-4 w-4" />
+        Save
+      </button>
+      <button
+        onClick={() => setEditingEvent(null)}
+        className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-1"
+      >
+        <X className="h-4 w-4" />
+        Cancel
+      </button>
+    </div>
+  </div>
                   ) : (
                     <div>
                       <div className="flex justify-between items-start mb-3">
@@ -321,7 +413,7 @@ const Events = ({ data, setData, editingItem, setEditingItem }) => {
                         </div>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleEditEvent(event)}
+                            onClick={() => setEditingEvent({ ...event })}
                             className="text-blue-600 hover:text-blue-800 p-1"
                           >
                             <Edit2 className="h-4 w-4" />
@@ -391,6 +483,11 @@ const Events = ({ data, setData, editingItem, setEditingItem }) => {
                     </button>
                   </div>
                   <p className="text-gray-600">{event.description}</p>
+                  {event.coordinator && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      <strong>Coordinator:</strong> {event.coordinator}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

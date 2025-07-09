@@ -1,0 +1,20 @@
+[
+  {
+    "url": "http://localhost:5001/uploads/1751720302484-6675095.jpg",
+    "title": "",
+    "description": "",
+    "category": "general",
+    "isActive": true,
+    "id": "1751720302501",
+    "dateAdded": "2025-07-05"
+  },
+  {
+    "url": "http://localhost:5001/uploads/1752068678362-207369252.jpeg",
+    "title": "",
+    "description": "",
+    "category": "general",
+    "isActive": true,
+    "id": "1752068678381",
+    "dateAdded": "2025-07-09"
+  }
+]
