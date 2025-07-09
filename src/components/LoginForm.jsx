@@ -8,7 +8,7 @@ const LoginForm = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -23,7 +23,6 @@ const LoginForm = ({ onLogin }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // Pass token to onLogin handler
         onLogin(data.token);
         navigate('/admin');
       } else {

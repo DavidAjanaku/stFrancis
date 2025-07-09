@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Edit, Save, X, Plus, Trash2, Eye, ArrowUp, ArrowDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Edit, Plus, Trash2, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 import SlideEditor from '../../components/SlideEditor';
 
 const HeroBanner = ({ slides, currentSlide, onSlideChange }) => {
@@ -111,31 +112,40 @@ const HomepageAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+  const navigate = useNavigate();
 
-  // Fetch slides from backend
+  // Fetch slides from backend with authentication
   useEffect(() => {
-    const fetchSlides = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${backendUrl}/api/hero-slides/admin`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch slides');
-        
-        const data = await response.json();
-        setSlides(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+const fetchSlides = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${backendUrl}/api/hero-slides/admin`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
       }
-    };
-    
+    });
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 401 && errorData.message === 'Token expired') {
+          localStorage.removeItem('token');
+          navigate('/login');
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error(errorData.message || 'Failed to fetch slides');
+      }
+      const data = await response.json();
+      setSlides(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching slides:', error);
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
     fetchSlides();
-  }, []);
+  }, [navigate]);
 
   const handleEditSlide = (slide) => {
     setEditingSlide(slide);
@@ -144,14 +154,16 @@ const HomepageAdmin = () => {
   const handleSaveSlide = async (editedSlide, imageFile) => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        throw new Error('No authentication token found. Please log in.');
+      }
       const formData = new FormData();
       
-      // Add the image file if it exists
       if (imageFile) {
         formData.append('image', imageFile);
       }
       
-      // Add other slide data
       formData.append('title', editedSlide.title);
       formData.append('subtitle', editedSlide.subtitle);
       formData.append('description', editedSlide.description);
@@ -160,15 +172,19 @@ const HomepageAdmin = () => {
       const response = await fetch(`${backendUrl}/api/hero-slides/${editedSlide._id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: formData
+        body: formData,
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData.error || errorData.message || 'Failed to save slide';
-        throw new Error(errorMessage);
+        if (response.status === 401 && errorData.message === 'Token expired') {
+          localStorage.removeItem('token');
+          navigate('/login');
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error(errorData.message || 'Failed to save slide');
       }
       
       const updatedSlide = await response.json();
@@ -191,14 +207,26 @@ const HomepageAdmin = () => {
     
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        throw new Error('No authentication token found. Please log in.');
+      }
       const response = await fetch(`${backendUrl}/api/hero-slides/${slideId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
       
-      if (!response.ok) throw new Error('Failed to delete slide');
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 401 && errorData.message === 'Token expired') {
+          localStorage.removeItem('token');
+          navigate('/login');
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error(errorData.message || 'Failed to delete slide');
+      }
       
       setSlides(prev => prev.filter(slide => slide._id !== slideId));
       if (currentSlide >= slides.length - 1) {
@@ -212,14 +240,16 @@ const HomepageAdmin = () => {
   const handleAddSlide = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        throw new Error('No authentication token found. Please log in.');
+      }
       const formData = new FormData();
       
-      // Create a default image blob
       const defaultImage = await fetch('/default-hero.jpg');
       const blob = await defaultImage.blob();
       const defaultImageFile = new File([blob], 'default-hero.jpg', { type: 'image/jpeg' });
 
-      // Add slide data
       formData.append('title', "New Slide Title");
       formData.append('subtitle', "New Slide Subtitle");
       formData.append('description', "Add your slide description here.");
@@ -227,18 +257,23 @@ const HomepageAdmin = () => {
         primary: { text: "Primary Button", link: "/" },
         secondary: { text: "Secondary Button", link: "/" }
       }));
-      formData.append('image', defaultImageFile); // Add default image
+      formData.append('image', defaultImageFile);
 
       const response = await fetch(`${backendUrl}/api/hero-slides`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: formData
+        body: formData,
       });
       
       if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 401 && errorData.message === 'Token expired') {
+          localStorage.removeItem('token');
+          navigate('/login');
+          throw new Error('Session expired. Please log in again.');
+        }
         throw new Error(errorData.message || 'Failed to add slide');
       }
       
@@ -257,25 +292,37 @@ const HomepageAdmin = () => {
       
       if (newIndex < 0 || newIndex >= slides.length) return;
       
-      // Swap order values
       const updatedSlides = [...slides];
       [updatedSlides[currentIndex], updatedSlides[newIndex]] = 
         [updatedSlides[newIndex], updatedSlides[currentIndex]];
       
       setSlides(updatedSlides);
       
-      // Update order in backend
       const token = localStorage.getItem('token');
-      await fetch(`${backendUrl}/api/hero-slides/order/update`, {
+      if (!token) {
+        navigate('/login');
+        throw new Error('No authentication token found. Please log in.');
+      }
+      const response = await fetch(`${backendUrl}/api/hero-slides/order/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          orderedIds: updatedSlides.map(slide => slide._id)
-        })
+          orderedIds: updatedSlides.map(slide => slide._id),
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 401 && errorData.message === 'Token expired') {
+          localStorage.removeItem('token');
+          navigate('/login');
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error(errorData.message || 'Failed to update slide order');
+      }
     } catch (err) {
       setError(err.message);
     }

@@ -1,10 +1,7 @@
-// App.js
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import Header from '../navigation/header';
-import LoginForm from '../components/LoginForm';
 import Dashboard from '../components/Dashboard/Dashboard';
-import Homepage from '../components/Homepage/Homepage';
+import HomepageAdmin from '../components/Homepage/Homepage';
 import MassSchedule from '../components/MassSchedule/MassSchedule';
 import AboutSection from '../components/AboutSection/AboutSectionDashboard';
 import Ministries from '../components/MinistriesManagement/Ministries';
@@ -15,20 +12,18 @@ import { dashboardData } from '../Dashboard/data/dashboardData';
 import { menuItems } from '../Dashboard/data/menuItems';
 import DonationAdmin from '../components/Dashboard/Post/Post';
 import LiturgicalCalendarAdmin from './LiturgicalCalendarAdmin/LiturgicalCalendarAdmin';
-import HomepageAdmin from '../components/Homepage/Homepage';
 import ContactAdmin from '../components/Dashboard/ContactAdmin/ContactAdmin';
 
-const ChurchAdminDashboard = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
-  const [data, setData] = useState(dashboardData);
+  const [localData, setLocalData] = useState({ ...dashboardData, ...data });
 
   const renderContent = () => {
     const commonProps = {
-      data,
-      setData,
+      data: localData,
+      setData: setLocalData,
       editingItem,
       setEditingItem
     };
@@ -39,7 +34,10 @@ const ChurchAdminDashboard = () => {
       case 'homepage':
         return <HomepageAdmin {...commonProps} />;
       case 'mass-schedule':
-        return <MassSchedule {...commonProps} />;
+        return <MassSchedule 
+          {...commonProps} 
+          onSaveMassSchedule={onSaveMassSchedule} 
+        />;
       case 'about-us':
         return <AboutSection {...commonProps} />;
       case 'ministries':
@@ -48,14 +46,11 @@ const ChurchAdminDashboard = () => {
         return <Events {...commonProps} />;
       case 'prayer-requests':
         return <PrayerRequests {...commonProps} />;
-         case 'post':
+      case 'post':
         return <DonationAdmin {...commonProps} />;
-          case 'prayer-requests':
-        return <PrayerRequests {...commonProps} />;
-         case 'liturgical':
+      case 'liturgical':
         return <LiturgicalCalendarAdmin {...commonProps} />;  
-
-          case 'contact':
+      case 'contact':
         return <ContactAdmin {...commonProps} />;  
       case 'gallery':
         return <Gallery {...commonProps} />;
@@ -71,14 +66,6 @@ const ChurchAdminDashboard = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <LoginForm
-        onLogin={() => setIsAuthenticated(true)}
-      />
-    );
-  }
-
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar
@@ -86,7 +73,7 @@ const ChurchAdminDashboard = () => {
         setSidebarOpen={setSidebarOpen}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
-        setIsAuthenticated={setIsAuthenticated}
+        handleLogout={handleLogout}
       />
       <div className="flex-1 overflow-auto">
         <div className="p-8">

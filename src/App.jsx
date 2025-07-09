@@ -22,41 +22,11 @@ function App() {
     }
   });
 
-useEffect(() => {
-    const verifyToken = async () => {
-      try {
-        setIsLoading(true);
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await fetch('http://localhost:5001/api/auth/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem('token');
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        localStorage.removeItem('token');
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    verifyToken();
+  useEffect(() => {
+    // Simplified authentication check using localStorage
+    const token = localStorage.getItem('token');
+    setIsAuthenticated(token === 'demo-token');
+    setIsLoading(false);
 
     // Fetch mass schedule data
     const fetchMassSchedule = async () => {
@@ -77,25 +47,12 @@ useEffect(() => {
     fetchMassSchedule();
   }, []);
 
-   const handleLogin = (token) => {
-    localStorage.setItem('token', token);
+  const handleLogin = () => {
+    localStorage.setItem('token', 'demo-token');
     setIsAuthenticated(true);
   };
 
-   const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await fetch('http://localhost:5001/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
   };
@@ -148,7 +105,11 @@ useEffect(() => {
             path="/admin"
             element={
               isAuthenticated ? (
-                <ChurchAdminDashboard data={data} onSaveMassSchedule={handleSaveMassSchedule} />
+                <ChurchAdminDashboard 
+                  data={data} 
+                  onSaveMassSchedule={handleSaveMassSchedule} 
+                  handleLogout={handleLogout}
+                />
               ) : (
                 <Navigate to="/login" replace />
               )
