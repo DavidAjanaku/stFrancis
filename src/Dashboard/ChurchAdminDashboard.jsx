@@ -13,6 +13,7 @@ import { menuItems } from '../Dashboard/data/menuItems';
 import DonationAdmin from '../components/Dashboard/Post/Post';
 import LiturgicalCalendarAdmin from './LiturgicalCalendarAdmin/LiturgicalCalendarAdmin';
 import ContactAdmin from '../components/Dashboard/ContactAdmin/ContactAdmin';
+import FooterAdmin from '../components/Dashboard/FooterAdmin/FooterAdmin';
 
 const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -54,6 +55,8 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
         return <ContactAdmin {...commonProps} />;  
       case 'gallery':
         return <Gallery {...commonProps} />;
+          case 'footer':
+        return <FooterAdmin {...commonProps} />;
       default:
         return (
           <div className="text-center py-12">
