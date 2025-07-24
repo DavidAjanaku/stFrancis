@@ -14,7 +14,7 @@ import {
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'liturgical', label: 'Liturgical Calendar', icon: BookOpen },
     { id: 'gallery', label: 'Photo Gallery', icon: Camera },
-    { id: 'prayer-requests', label: 'Prayer Requests', icon: Heart },
+    // { id: 'prayer-requests', label: 'Prayer Requests', icon: Heart },
         { id: 'post', label: 'Post', icon: Heart },
                 { id: 'donation', label: 'Donation page', icon: Heart },
 

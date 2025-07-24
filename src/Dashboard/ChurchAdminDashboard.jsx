@@ -38,9 +38,9 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
       case 'homepage':
         return <HomepageAdmin {...commonProps} />;
       case 'mass-schedule':
-        return <MassSchedule 
-          {...commonProps} 
-          onSaveMassSchedule={onSaveMassSchedule} 
+        return <MassSchedule
+          {...commonProps}
+          onSaveMassSchedule={onSaveMassSchedule}
         />;
       case 'about-us':
         return <AboutSection {...commonProps} />;
@@ -48,21 +48,21 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
         return <Ministries {...commonProps} />;
       case 'events':
         return <Events {...commonProps} />;
-      case 'prayer-requests':
-        return <PrayerRequests {...commonProps} />;
+      // case 'prayer-requests':
+      // return <PrayerRequests {...commonProps} />;
       case 'post':
         return <DonationAdmin {...commonProps} />;
       case 'liturgical':
-        return <LiturgicalCalendarAdmin {...commonProps} />;  
+        return <LiturgicalCalendarAdmin {...commonProps} />;
       case 'contact':
-        return <ContactAdmin {...commonProps} />;  
+        return <ContactAdmin {...commonProps} />;
       case 'gallery':
         return <Gallery {...commonProps} />;
-           case 'donation':
+      case 'donation':
         return <CategoriesAdmin {...commonProps} />;
-           case 'groups':
+      case 'groups':
         return <ParishSocietiesAdminUI {...commonProps} />;
-          case 'footer':
+      case 'footer':
         return <FooterAdmin {...commonProps} />;
       default:
         return (
@@ -77,7 +77,7 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 relative">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -85,11 +85,25 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
         setActiveSection={setActiveSection}
         handleLogout={handleLogout}
       />
-      <div className="flex-1 overflow-auto">
+      
+      {/* Main Content Area */}
+      <div 
+        className={`flex-1 overflow-auto transition-all duration-300 ${
+          sidebarOpen ? 'ml-64' : 'ml-16'
+        }`}
+      >
         <div className="p-8">
           {renderContent()}
         </div>
       </div>
+
+      {/* Overlay for mobile when sidebar is open */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -113,8 +113,7 @@ const Header = () => {
               
               {parishGroupsDropdownOpen && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10">
-                  <Link to="/parish-groups/pastoral" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Pastoral</Link>
-<Link to="/parish-groups/societies" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Societies & Organizations</Link>                  <Link to="/parish-groups/scc" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Small Christian Community</Link>
+<Link to="/parish-groups/societies" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Societies & Organizations</Link>               
                 </div>
               )}
             </div>
