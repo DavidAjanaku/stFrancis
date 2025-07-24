@@ -80,19 +80,49 @@ const connectDB = async () => {
 };
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/mass-schedule', massScheduleRoutes);
-app.use('/api/about-section', aboutSectionRoutes);
-app.use('/api/events', eventsRoutes);
-app.use('/api/gallery', galleryRouter);
-app.use('/api/prayer-requests', prayerRequestRoutes);
-app.use('/api/donation-sections', donationSectionRoutes);
-app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
-app.use('/api/hero-slides', heroSlideRoutes);
-app.use('/api/contact', contactRoutes);
-app.use('/api/footer', footerRoutes);
-app.use('/api/donations-sections', donationSectionRoutess); // Updated route
-app.use('/api/parish-societies', parishSocietyRoutes);
+try {
+  app.use('/api/auth', authRoutes);
+  console.log('authRoutes loaded');
+
+  app.use('/api/mass-schedule', massScheduleRoutes);
+  console.log('massScheduleRoutes loaded');
+
+  app.use('/api/about-section', aboutSectionRoutes);
+  console.log('aboutSectionRoutes loaded');
+
+  app.use('/api/events', eventsRoutes);
+  console.log('eventsRoutes loaded');
+
+  app.use('/api/gallery', galleryRouter);
+  console.log('galleryRouter loaded');
+
+  app.use('/api/prayer-requests', prayerRequestRoutes);
+  console.log('prayerRequestRoutes loaded');
+
+  app.use('/api/donation-sections', donationSectionRoutes);
+  console.log('donationSectionRoutes loaded');
+
+  app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
+  console.log('liturgicalCalendarRoutes loaded');
+
+  app.use('/api/hero-slides', heroSlideRoutes);
+  console.log('heroSlideRoutes loaded');
+
+  app.use('/api/contact', contactRoutes);
+  console.log('contactRoutes loaded');
+
+  app.use('/api/footer', footerRoutes);
+  console.log('footerRoutes loaded');
+
+  app.use('/api/donations-sections', donationSectionRoutess);
+  console.log('donationSectionRoutess loaded');
+
+  app.use('/api/parish-societies', parishSocietyRoutes);
+  console.log('parishSocietyRoutes loaded');
+} catch (err) {
+  console.error('Error loading route:', err);
+}
+
 
 // Cleanup old mass schedules
 const scheduleCleanup = async () => {
