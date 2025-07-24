@@ -15,7 +15,7 @@ import eventsRoutes from './routes/events.js';
 import galleryRouter from './routes/gallery.js';
 import prayerRequestRoutes from './routes/prayerRequests.js';
 import donationSectionRoutes from './routes/postSectionRoutes.js';
-import donationSectionRoutess from './routes/donationSectionRoutes.js';
+import donationROutes from './routes/donationSectionRoutes.js';
 import liturgicalCalendarRoutes from './routes/liturgicalCalendarRoutes.js';
 import heroSlideRoutes from './routes/heroSlideRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
@@ -114,8 +114,8 @@ try {
   app.use('/api/footer', footerRoutes);
   console.log('footerRoutes loaded');
 
-  app.use('/api/donations-sections', donationSectionRoutess);
-  console.log('donationSectionRoutess loaded');
+  app.use('/api/donations-sections', donationROutes);
+  console.log('donationROutes loaded');
 
   app.use('/api/parish-societies', parishSocietyRoutes);
   console.log('parishSocietyRoutes loaded');
