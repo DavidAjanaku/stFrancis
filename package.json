@@ -6,10 +6,16 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
+    "build": "npm run client:build",
+    "prebuild": "npm install",
+    "postbuild": "echo 'Build completed successfully'",
     "client:dev": "vite",
     "client:build": "vite build",
     "client:preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "audit-fix": "npm audit fix",
+    "clean": "rm -rf dist node_modules/.vite",
+    "deploy": "npm run clean && npm install && npm run build"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
