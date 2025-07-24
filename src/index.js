@@ -6,19 +6,19 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import authRoutes from './routes/auth.js';
-import massScheduleRoutes from './routes/massSchedule.js';
-import aboutSectionRoutes from './routes/aboutSectionRoutes.js';
-import eventsRoutes from './routes/events.js';
-import galleryRouter from './routes/gallery.js';
-import prayerRequestRoutes from './routes/prayerRequests.js';
-import donationSectionRoutes from './routes/postSectionRoutes.js';
-import donationSectionRoutess from './routes/donationSectionRoutes.js'
-import liturgicalCalendarRoutes from './routes/liturgicalCalendarRoutes.js';
-import heroSlideRoutes from './routes/heroSlideRoutes.js';
-import contactRoutes from './routes/contactRoutes.js';
-import footerRoutes from './routes/footerRoutes.js';
-import parishSocietyRoutes from './routes/parishSocietyRoutes.js';
+import authRoutes from './server/routes/auth.js';
+import massScheduleRoutes from './server/routes/massSchedule.js';
+import aboutSectionRoutes from './server/routes/aboutSectionRoutes.js';
+import eventsRoutes from './server/routes/events.js';
+import galleryRouter from './server/routes/gallery.js';
+import prayerRequestRoutes from './server/routes/prayerRequests.js';
+import donationSectionRoutes from './server/routes/postSectionRoutes.js';
+import donationSectionRoutess from './server/routes/donationSectionRoutes.js'
+import liturgicalCalendarRoutes from './server/routes/liturgicalCalendarRoutes.js';
+import heroSlideRoutes from './server/routes/heroSlideRoutes.js';
+import contactRoutes from './server/routes/contactRoutes.js';
+import footerRoutes from './server/routes/footerRoutes.js';
+import parishSocietyRoutes from './server/routes/parishSocietyRoutes.js';
 
 dotenv.config();
 
