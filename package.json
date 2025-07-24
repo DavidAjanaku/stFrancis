@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server/index.js",
-    "dev": "nodemon server/index.js",
+    "dev": "vite",
     "build": "npm run client:build",
     "prebuild": "npm install",
     "postbuild": "echo 'Build completed successfully'",
