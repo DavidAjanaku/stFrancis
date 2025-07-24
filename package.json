@@ -3,9 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "src/server/src/index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/server/src/index.js",
+    "dev": "nodemon src/server/src/index.js",
     "build": "npm run client:build",
     "prebuild": "npm install",
     "postbuild": "echo 'Build completed successfully'",
