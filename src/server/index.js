@@ -36,7 +36,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://stfrancis-52b1.onrender.com', // Render production frontend
+    'https://stfrancis-52b1.onrender.com',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -70,10 +70,14 @@ app.use('/uploads', express.static(uploadsPath));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../../dist'); // Point to project root's dist
+  const frontendPath = path.resolve(process.cwd(), '..', 'dist'); // Move up to /opt/render/project/dist
+  console.log('Current working directory:', process.cwd());
   console.log('Serving frontend from:', frontendPath);
+  console.log('Current __dirname:', __dirname);
   if (!fs.existsSync(frontendPath)) {
     console.error('Error: Frontend dist directory not found:', frontendPath);
+  } else {
+    console.log('Frontend dist directory exists. Contents:', fs.readdirSync(frontendPath));
   }
   app.use(express.static(frontendPath));
 

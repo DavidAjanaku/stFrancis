@@ -7,6 +7,7 @@ export default defineConfig({
     port: 5173,
   },
   build: {
-    outDir: 'src/frontend/dist', // Optional: if you want this path
+    outDir: 'dist',
+    base: '/', // Ensure correct asset paths
   },
 });
