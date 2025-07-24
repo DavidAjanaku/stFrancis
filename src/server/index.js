@@ -68,29 +68,6 @@ console.log('Hero images directory:', heroUploadsPath);
 // Serve uploads statically
 app.use('/uploads', express.static(uploadsPath));
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.resolve(process.cwd(), '..', 'dist'); // Move up to /opt/render/project/dist
-  console.log('Current working directory:', process.cwd());
-  console.log('Serving frontend from:', frontendPath);
-  console.log('Current __dirname:', __dirname);
-  if (!fs.existsSync(frontendPath)) {
-    console.error('Error: Frontend dist directory not found:', frontendPath);
-  } else {
-    console.log('Frontend dist directory exists. Contents:', fs.readdirSync(frontendPath));
-  }
-  app.use(express.static(frontendPath));
-
-  app.get('*', (req, res) => {
-    const indexPath = path.join(frontendPath, 'index.html');
-    if (!fs.existsSync(indexPath)) {
-      console.error('Error: index.html not found at:', indexPath);
-      return res.status(500).send('Frontend build not found. Please ensure the build process ran successfully.');
-    }
-    res.sendFile(indexPath);
-  });
-}
-
 // Database Connection
 const connectDB = async () => {
   try {
