@@ -5,8 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",  
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
     "build": "npm run client:build",
     "prebuild": "npm install",
     "postbuild": "echo 'Build completed successfully'",
