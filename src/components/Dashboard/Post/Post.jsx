@@ -18,7 +18,7 @@ const DonationAdmin = () => {
     const fetchDonationData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:5001/api/donation-sections');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/donation-sections');
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -140,8 +140,8 @@ const handleSave = async () => {
 
     const method = mode === 'create' ? 'POST' : 'PUT';
     const endpoint = mode === 'create' 
-      ? 'http://localhost:5001/api/donation-sections'
-      : `http://localhost:5001/api/donation-sections/${formData.id}`;
+      ? 'https://stfrancis-52b1.onrender.com/api/donation-sections'
+      : `'https://stfrancis-52b1.onrender.com/api/donation-sections/${formData.id}`;
     
     const payload = {
       header: formData.header,
@@ -207,7 +207,7 @@ const handleSave = async () => {
     }
     
     try {
-      const response = await fetch(`http://localhost:5001/api/donation-sections/${id}`, {
+      const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/donation-sections/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

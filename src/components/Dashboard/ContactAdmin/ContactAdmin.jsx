@@ -72,7 +72,7 @@ const ContactAdmin = () => {
     const fetchContactInfo = async () => {
       try {
         // Use consistent API endpoint
-        const response = await fetch('http://localhost:5001/api/contact');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/contact');
         
         // Check if response is OK before parsing
         if (!response.ok) {
@@ -117,7 +117,7 @@ const ContactAdmin = () => {
     try {
       const updatedInfo = { ...contactInfo, [field]: tempValue };
       
-      const response = await fetch('http://localhost:5001/api/contact', {
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/contact', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

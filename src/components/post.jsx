@@ -21,7 +21,7 @@ const DonationBlog = () => {
     const fetchDonationData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5001/api/donation-sections');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/donation-sections');
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

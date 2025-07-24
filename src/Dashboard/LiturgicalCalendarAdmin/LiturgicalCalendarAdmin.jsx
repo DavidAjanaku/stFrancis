@@ -32,7 +32,7 @@ const LiturgicalCalendarAdmin = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/liturgical-calendar');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/liturgical-calendar');
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();
@@ -62,8 +62,8 @@ const LiturgicalCalendarAdmin = () => {
       
       const method = editingEvent ? 'PUT' : 'POST';
       const endpoint = editingEvent 
-        ? `http://localhost:5001/api/liturgical-calendar/${editingEvent._id}`
-        : 'http://localhost:5001/api/liturgical-calendar';
+        ? `'https://stfrancis-52b1.onrender.com/api/liturgical-calendar/${editingEvent._id}`
+        : 'https://stfrancis-52b1.onrender.com/api/liturgical-calendar';
       
       const response = await fetch(endpoint, {
         method,
@@ -115,7 +115,7 @@ const LiturgicalCalendarAdmin = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Authentication required');
       
-      const response = await fetch(`http://localhost:5001/api/liturgical-calendar/${eventId}`, {
+      const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/liturgical-calendar/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

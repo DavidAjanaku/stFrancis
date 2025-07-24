@@ -46,7 +46,7 @@ const GalleryManagement = () => {
 
   const fetchGalleryImages = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/gallery');
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/gallery');
       if (!response.ok) throw new Error('Failed to fetch gallery images');
       const data = await response.json();
       setImages(data);
@@ -85,7 +85,7 @@ const GalleryManagement = () => {
     formData.append('image', file);
     
     try {
-      const response = await fetch('http://localhost:5001/api/gallery/upload', {
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/gallery/upload', {
         method: 'POST',
         body: formData
       });
@@ -116,7 +116,7 @@ const GalleryManagement = () => {
       const imageUrl = await uploadImage(newImage.file);
       
       // Create gallery item
-      const response = await fetch('http://localhost:5001/api/gallery', {
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/gallery', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ const GalleryManagement = () => {
       }
       
       // Update gallery item
-      const response = await fetch(`http://localhost:5001/api/gallery/${editingImage.id}`, {
+      const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/gallery/${editingImage.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ const GalleryManagement = () => {
   const handleDeleteImage = async (imageId) => {
     if (window.confirm('Are you sure you want to delete this image?')) {
       try {
-        const response = await fetch(`http://localhost:5001/api/gallery/${imageId}`, {
+        const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/gallery/${imageId}`, {
           method: 'DELETE'
         });
         
@@ -213,7 +213,7 @@ const GalleryManagement = () => {
     const updatedStatus = !image.isActive;
     
     try {
-      const response = await fetch(`http://localhost:5001/api/gallery/${imageId}`, {
+      const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/gallery/${imageId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

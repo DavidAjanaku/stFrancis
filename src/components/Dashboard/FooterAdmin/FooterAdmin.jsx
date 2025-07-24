@@ -40,7 +40,7 @@ const FooterAdmin = () => {
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/footer');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/footer');
         if (!response.ok) {
           throw new Error('Failed to fetch footer data');
         }
@@ -89,7 +89,7 @@ const FooterAdmin = () => {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/footer', {
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/footer', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -20,13 +20,13 @@ const DonationPage = () => {
       try {
         setLoading(true);
         // Fetch donation categories
-        const categoriesResponse = await fetch('http://localhost:5001/api/donations-sections/categories');
+        const categoriesResponse = await fetch('https://stfrancis-52b1.onrender.com/api/donations-sections/categories');
         if (!categoriesResponse.ok) throw new Error('Failed to fetch donation categories');
         const categoriesData = await categoriesResponse.json();
         setDonationCategories(categoriesData);
 
         // Fetch hero content
-        const heroResponse = await fetch('http://localhost:5001/api/donations-sections/hero');
+        const heroResponse = await fetch('https://stfrancis-52b1.onrender.com/api/donations-sections/hero');
         if (!heroResponse.ok) throw new Error('Failed to fetch hero content');
         const heroData = await heroResponse.json();
         setHeroContent(heroData);
@@ -150,7 +150,7 @@ const DonationPage = () => {
                 {/* Image */}
                 <div className="relative h-64 overflow-hidden">
                  <img
-  src={`http://localhost:5001${category.image}`}
+  src={`'https://stfrancis-52b1.onrender.com${category.image}`}
   alt={category.title}
   className="w-full h-full object-cover transform transition-transform duration-300 hover:scale-110"
 />

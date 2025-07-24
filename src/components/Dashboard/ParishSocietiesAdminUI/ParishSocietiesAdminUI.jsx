@@ -88,7 +88,7 @@ const ParishSocietiesAdminUI = () => {
   useEffect(() => {
     const fetchSocieties = async () => {
       try {
-        const response = await apiRequest('http://localhost:5001/api/parish-societies', 'GET', null, false);
+        const response = await apiRequest('https://stfrancis-52b1.onrender.com/api/parish-societies', 'GET', null, false);
         setSocieties(response);
         setLoading(false);
       } catch (err) {
@@ -105,7 +105,7 @@ const ParishSocietiesAdminUI = () => {
   const addSociety = async () => {
     try {
       const addedSociety = await apiRequest(
-        'http://localhost:5001/api/parish-societies',
+        'https://stfrancis-52b1.onrender.com/api/parish-societies',
         'POST',
         newSociety
       );
@@ -129,7 +129,7 @@ const ParishSocietiesAdminUI = () => {
   const updateSociety = async (id, updatedData) => {
     try {
       const updatedSociety = await apiRequest(
-        `http://localhost:5001/api/parish-societies/${id}`,
+        `'https://stfrancis-52b1.onrender.com/api/parish-societies/${id}`,
         'PUT',
         updatedData
       );
@@ -147,7 +147,7 @@ const ParishSocietiesAdminUI = () => {
     if (window.confirm('Are you sure you want to delete this society? This action cannot be undone.')) {
       try {
         await apiRequest(
-          `http://localhost:5001/api/parish-societies/${id}`,
+          `'https://stfrancis-52b1.onrender.com/api/parish-societies/${id}`,
           'DELETE'
         );
         setSocieties(societies.filter(society => society._id !== id));
@@ -161,7 +161,7 @@ const ParishSocietiesAdminUI = () => {
   const toggleSocietyStatus = async (id) => {
     try {
       const toggledSociety = await apiRequest(
-        `http://localhost:5001/api/parish-societies/${id}/toggle-status`,
+        `'https://stfrancis-52b1.onrender.com/api/parish-societies/${id}/toggle-status`,
         'PATCH',
         {}
       );
@@ -178,7 +178,7 @@ const ParishSocietiesAdminUI = () => {
     if (window.confirm(`Are you sure you want to delete ${selectedSocieties.length} societies? This action cannot be undone.`)) {
       try {
         await apiRequest(
-          'http://localhost:5001/api/parish-societies/bulk-delete',
+          'https://stfrancis-52b1.onrender.com/api/parish-societies/bulk-delete',
           'POST',
           { ids: selectedSocieties }
         );
@@ -194,7 +194,7 @@ const ParishSocietiesAdminUI = () => {
   const bulkToggleStatus = async (active) => {
     try {
       await apiRequest(
-        'http://localhost:5001/api/parish-societies/bulk-update',
+        'https://stfrancis-52b1.onrender.com/api/parish-societies/bulk-update',
         'POST',
         {
           ids: selectedSocieties,
@@ -226,7 +226,7 @@ const ParishSocietiesAdminUI = () => {
       delete duplicatedSociety.__v;
       
       const addedSociety = await apiRequest(
-        'http://localhost:5001/api/parish-societies',
+        'https://stfrancis-52b1.onrender.com/api/parish-societies',
         'POST',
         duplicatedSociety
       );

@@ -31,7 +31,7 @@ const ContactPrayer = () => {
     setSubmitStatus(null);
 
     try {
-      const response = await fetch('http://localhost:5001/api/prayer-requests', {
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/prayer-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -60,7 +60,7 @@ const ContactPrayer = () => {
     useEffect(() => {
       const fetchContactInfo = async () => {
         try {
-          const response = await fetch('http://localhost:5001/api/contact');
+          const response = await fetch('https://stfrancis-52b1.onrender.com/api/contact');
           const data = await response.json();
           setContactInfo(data);
         } catch (error) {

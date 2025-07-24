@@ -18,7 +18,7 @@ const MassSchedule = ({ editingItem, setEditingItem }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/mass-schedule');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/mass-schedule');
         if (!response.ok) throw new Error('Failed to fetch mass schedule');
         
         const data = await response.json();
@@ -146,7 +146,7 @@ const MassSchedule = ({ editingItem, setEditingItem }) => {
   // Save handler
   const handleSave = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/mass-schedule', {
+      const response = await fetch('https://stfrancis-52b1.onrender.com/api/mass-schedule', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

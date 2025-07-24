@@ -34,7 +34,7 @@ function App() {
     // Fetch mass schedule data
     const fetchMassSchedule = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/mass-schedule');
+        const response = await fetch('api/mass-schedule');
         if (response.ok) {
           const scheduleData = await response.json();
           setData(prev => ({

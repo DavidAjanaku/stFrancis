@@ -24,7 +24,7 @@ const ParishSocietiesPage = () => {
   useEffect(() => {
     const fetchSocieties = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/parish-societies/active');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/parish-societies/active');
         if (!response.ok) throw new Error('Failed to fetch societies');
         const data = await response.json();
         setSocieties(data);

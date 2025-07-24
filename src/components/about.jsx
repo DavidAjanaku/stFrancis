@@ -9,7 +9,7 @@ const AboutSection = () => {
     const fetchAboutData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5001/api/about-section');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/about-section');
         console.log('API Response:', response);
         if (!response.ok) {
           const errorText = await response.text();

@@ -20,7 +20,7 @@ const Events = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/events');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/events');
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();
@@ -39,7 +39,7 @@ const Events = () => {
   const handleAddEvent = async () => {
     if (newEvent.title && newEvent.date && newEvent.description) {
       try {
-        const response = await fetch('http://localhost:5001/api/events', {
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/events', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ const Events = () => {
   const handleSaveEdit = async () => {
     if (editingEvent.title && editingEvent.date && editingEvent.description) {
       try {
-        const response = await fetch(`http://localhost:5001/api/events/${editingEvent.id}`, {
+        const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/events/${editingEvent.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const Events = () => {
   const handleDeleteEvent = async (eventId) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        const response = await fetch(`http://localhost:5001/api/events/${eventId}`, {
+        const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/events/${eventId}`, {
           method: 'DELETE'
         });
         

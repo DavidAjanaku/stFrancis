@@ -6,7 +6,7 @@ const HeroBanner = () => {
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState({});
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://stfrancis-52b1.onrender.com';
 
   useEffect(() => {
     const fetchSlides = async () => {

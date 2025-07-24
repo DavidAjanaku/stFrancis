@@ -11,7 +11,7 @@ const AboutSectionDashboard = ({ editingItem, setEditingItem }) => {
   useEffect(() => {
     const fetchAboutData = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/about-section');
+        const response = await fetch('https://stfrancis-52b1.onrender.com/api/about-section');
         if (!response.ok) throw new Error('Failed to fetch about section data');
         const data = await response.json();
         setAboutData(data);
@@ -28,7 +28,7 @@ const AboutSectionDashboard = ({ editingItem, setEditingItem }) => {
 
 const handleSaveAboutSection = async (updatedData) => {
   try {
-    const response = await fetch('http://localhost:5001/api/about-section', {
+    const response = await fetch('https://stfrancis-52b1.onrender.com/api/about-section', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

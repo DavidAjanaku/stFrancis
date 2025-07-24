@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Edit, Plus, Trash2, Eye, ArrowUp, ArrowDown 
 import SlideEditor from '../../components/SlideEditor';
 
 const HeroBanner = ({ slides, currentSlide, onSlideChange }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://stfrancis-52b1.onrender.com';
 
   useEffect(() => {
     if (slides.length > 0) {
@@ -111,7 +111,7 @@ const HomepageAdmin = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://stfrancis-52b1.onrender.com';
   const navigate = useNavigate();
 
   // Fetch slides from backend with authentication
