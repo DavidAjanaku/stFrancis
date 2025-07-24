@@ -36,13 +36,13 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://stfrancis-52b1.onrender.com'  // Render production frontend
+    'https://stfrancis-52b1.onrender.com', // Render production frontend
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   exposedHeaders: ['Content-Length', 'Content-Type'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 
 // Middleware
@@ -67,6 +67,25 @@ console.log('Hero images directory:', heroUploadsPath);
 
 // Serve uploads statically
 app.use('/uploads', express.static(uploadsPath));
+
+// Serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../dist'); // Point to project root's dist
+  console.log('Serving frontend from:', frontendPath);
+  if (!fs.existsSync(frontendPath)) {
+    console.error('Error: Frontend dist directory not found:', frontendPath);
+  }
+  app.use(express.static(frontendPath));
+
+  app.get('*', (req, res) => {
+    const indexPath = path.join(frontendPath, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      console.error('Error: index.html not found at:', indexPath);
+      return res.status(500).send('Frontend build not found. Please ensure the build process ran successfully.');
+    }
+    res.sendFile(indexPath);
+  });
+}
 
 // Database Connection
 const connectDB = async () => {
@@ -123,18 +142,14 @@ try {
   console.error('Error loading route:', err);
 }
 
-
 // Cleanup old mass schedules
 const scheduleCleanup = async () => {
   try {
-    const schedules = await mongoose.model('MassSchedule')
-      .find()
-      .sort({ createdAt: -1 });
-
+    const schedules = await mongoose.model('MassSchedule').find().sort({ createdAt: -1 });
     if (schedules.length > 5) {
-      const idsToDelete = schedules.slice(5).map(s => s._id);
+      const idsToDelete = schedules.slice(5).map((s) => s._id);
       await mongoose.model('MassSchedule').deleteMany({
-        _id: { $in: idsToDelete }
+        _id: { $in: idsToDelete },
       });
       console.log(`Cleaned up ${idsToDelete.length} old mass schedules`);
     }
@@ -142,16 +157,6 @@ const scheduleCleanup = async () => {
     console.error('Schedule cleanup error:', error);
   }
 };
-
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../frontend/dist');
-  app.use(express.static(frontendPath));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
-}
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -168,7 +173,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
 
