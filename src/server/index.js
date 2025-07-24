@@ -13,10 +13,12 @@ import eventsRoutes from './routes/events.js';
 import galleryRouter from './routes/gallery.js';
 import prayerRequestRoutes from './routes/prayerRequests.js';
 import donationSectionRoutes from './routes/postSectionRoutes.js';
+import donationSectionRoutess from './routes/donationSectionRoutes.js'
 import liturgicalCalendarRoutes from './routes/liturgicalCalendarRoutes.js';
 import heroSlideRoutes from './routes/heroSlideRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import footerRoutes from './routes/footerRoutes.js';
+import parishSocietyRoutes from './routes/parishSocietyRoutes.js';
 
 dotenv.config();
 
@@ -82,6 +84,8 @@ app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
 app.use('/api/hero-slides', heroSlideRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/footer', footerRoutes);
+app.use('/api/donations-sections', donationSectionRoutess); // Updated route
+app.use('/api/parish-societies', parishSocietyRoutes);
 
 // Cleanup old mass schedules
 const scheduleCleanup = async () => {

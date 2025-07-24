@@ -14,6 +14,9 @@ import DonationAdmin from '../components/Dashboard/Post/Post';
 import LiturgicalCalendarAdmin from './LiturgicalCalendarAdmin/LiturgicalCalendarAdmin';
 import ContactAdmin from '../components/Dashboard/ContactAdmin/ContactAdmin';
 import FooterAdmin from '../components/Dashboard/FooterAdmin/FooterAdmin';
+import DonationPage from '../components/Dashboard/DonationAdmin/AdminDashboard';
+import CategoriesAdmin from '../components/Dashboard/DonationAdmin/AdminDashboard';
+import ParishSocietiesAdminUI from '../components/Dashboard/ParishSocietiesAdminUI/ParishSocietiesAdminUI';
 
 const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -55,6 +58,10 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
         return <ContactAdmin {...commonProps} />;  
       case 'gallery':
         return <Gallery {...commonProps} />;
+           case 'donation':
+        return <CategoriesAdmin {...commonProps} />;
+           case 'groups':
+        return <ParishSocietiesAdminUI {...commonProps} />;
           case 'footer':
         return <FooterAdmin {...commonProps} />;
       default:

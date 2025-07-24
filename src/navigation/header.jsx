@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
-import { Menu, X, Phone, MessageCircle } from 'lucide-react';
+import { Menu, X, Phone, MessageCircle, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
+  const [parishGroupsDropdownOpen, setParishGroupsDropdownOpen] = useState(false);
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
+
+  const closeAllDropdowns = () => {
+    setAboutDropdownOpen(false);
+    setParishGroupsDropdownOpen(false);
+  };
+
+  const handleLinkClick = () => {
+    setIsMenuOpen(false);
+    closeAllDropdowns();
+  };
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
@@ -50,7 +62,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3">
+          <Link to="/" className="flex items-center space-x-3" onClick={handleLinkClick}>
             <div className="w-12 h-12 bg-amber-800 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-xl">✚</span>
             </div>
@@ -62,10 +74,54 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
-            <Link to="/" className={`font-medium ${isActive('/') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Home</Link>
-            <Link to="/about" className={`font-medium ${isActive('/about') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>About Us</Link>
-            <Link to="/events" className={`font-medium ${isActive('/events') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Events</Link>
-            <Link to="/blog" className={`font-medium ${isActive('/blog') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Blog</Link>
+            <Link to="/" className={`font-medium ${isActive('/') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`} onClick={closeAllDropdowns}>Home</Link>
+            
+            {/* About Us Dropdown */}
+            <div className="relative">
+              <button 
+                className={`font-medium flex items-center space-x-1 ${isActive('/about') || isActive('/contact') || isActive('/gallery') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}
+                onClick={() => {
+                  setAboutDropdownOpen(!aboutDropdownOpen);
+                  setParishGroupsDropdownOpen(false);
+                }}
+              >
+                <span>About Us</span>
+                <ChevronDown size={16} className={`transform transition-transform ${aboutDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {aboutDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10">
+                  <Link to="/about/parish-history" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Parish History</Link>
+                  <Link to="/contact" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Contact Us</Link>
+                  <Link to="/gallery" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Gallery</Link>
+                </div>
+              )}
+            </div>
+
+            {/* Parish Groups Dropdown */}
+            <div className="relative">
+              <button 
+                className={`font-medium flex items-center space-x-1 ${isActive('/parish-groups') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}
+                onClick={() => {
+                  setParishGroupsDropdownOpen(!parishGroupsDropdownOpen);
+                  setAboutDropdownOpen(false);
+                }}
+              >
+                <span>Parish Groups</span>
+                <ChevronDown size={16} className={`transform transition-transform ${parishGroupsDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {parishGroupsDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10">
+                  <Link to="/parish-groups/pastoral" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Pastoral</Link>
+<Link to="/parish-groups/societies" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Societies & Organizations</Link>                  <Link to="/parish-groups/scc" className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800" onClick={closeAllDropdowns}>Small Christian Community</Link>
+                </div>
+              )}
+            </div>
+
+            <Link to="/events" className={`font-medium ${isActive('/events') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`} onClick={closeAllDropdowns}>Events</Link>
+            <Link to="/blog" className={`font-medium ${isActive('/blog') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`} onClick={closeAllDropdowns}>Blog</Link>
+            <Link to="/donation" className={`font-medium ${isActive('/donation') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`} onClick={closeAllDropdowns}>Donation</Link>
           </nav>
 
           {/* Mobile Menu Toggle */}
@@ -81,11 +137,47 @@ const Header = () => {
         {isMenuOpen && (
           <div className="lg:hidden mt-4 py-4 border-t">
             <nav className="flex flex-col space-y-4">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className={`text-left font-medium ${isActive('/') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Home</Link>
-              <Link to="/about" onClick={() => setIsMenuOpen(false)} className={`text-left font-medium ${isActive('/about') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>About Us</Link>
-              <Link to="/events" onClick={() => setIsMenuOpen(false)} className={`text-left font-medium ${isActive('/events') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Events</Link>
-              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className={`text-left font-medium ${isActive('/blog') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Blog</Link>
-              <Link to="/contact" onClick={() => setIsMenuOpen(false)} className={`text-left font-medium ${isActive('/contact') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Contact Us</Link>
+              <Link to="/" onClick={handleLinkClick} className={`text-left font-medium ${isActive('/') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Home</Link>
+              
+              {/* Mobile About Us Section */}
+              <div>
+                <button 
+                  className={`text-left font-medium flex items-center justify-between w-full ${isActive('/about') || isActive('/contact') || isActive('/gallery') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}
+                  onClick={() => setAboutDropdownOpen(!aboutDropdownOpen)}
+                >
+                  <span>About Us</span>
+                  <ChevronDown size={16} className={`transform transition-transform ${aboutDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {aboutDropdownOpen && (
+                  <div className="pl-4 mt-2 space-y-2">
+                    <Link to="/about/parish-history" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Parish History</Link>
+                    <Link to="/contact" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Contact Us</Link>
+                    <Link to="/gallery" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Gallery</Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Parish Groups Section */}
+              <div>
+                <button 
+                  className={`text-left font-medium flex items-center justify-between w-full ${isActive('/parish-groups') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}
+                  onClick={() => setParishGroupsDropdownOpen(!parishGroupsDropdownOpen)}
+                >
+                  <span>Parish Groups</span>
+                  <ChevronDown size={16} className={`transform transition-transform ${parishGroupsDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {parishGroupsDropdownOpen && (
+                  <div className="pl-4 mt-2 space-y-2">
+                    <Link to="/parish-groups/pastoral" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Pastoral</Link>
+                    <Link to="/parish-groups/organs" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Organs of the Church</Link>
+                    <Link to="/parish-groups/scc" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Small Christian Community</Link>
+                  </div>
+                )}
+              </div>
+
+              <Link to="/events" onClick={handleLinkClick} className={`text-left font-medium ${isActive('/events') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Events</Link>
+              <Link to="/blog" onClick={handleLinkClick} className={`text-left font-medium ${isActive('/blog') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Blog</Link>
+              <Link to="/donation" onClick={handleLinkClick} className={`text-left font-medium ${isActive('/donation') ? 'text-amber-800' : 'text-gray-700 hover:text-amber-800'}`}>Donation</Link>
             </nav>
           </div>
         )}

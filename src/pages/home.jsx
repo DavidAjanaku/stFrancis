@@ -86,13 +86,13 @@ const HomePage = () => {
       {/* <MinistriesSection /> */}
       <EventsSection />
       <LiturgicalCalendar />
-      <PhotoGallery 
+      {/* <PhotoGallery 
         images={galleryImages} 
         onImageClick={openModal} 
-      />
-      <ContactPrayer />
+      /> */}
+      {/* <ContactPrayer /> */}
       {/* <NewsletterSignup /> */}
-      <DonationSection />
+      {/* <DonationSection /> */}
       <Footer />
       <ImageModal
         isOpen={isModalOpen}

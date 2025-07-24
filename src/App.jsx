@@ -9,6 +9,9 @@ import Blog from './components/post';
 import Contact from './components/contactPrayer';
 import ChurchAdminDashboard from './Dashboard/ChurchAdminDashboard';
 import LoginForm from './components/LoginForm';
+import DonationPage from './components/DonationPage/DonationPage';
+import PhotoGallery from './components/PhotoGallery';
+import ParishSocietiesPage from './components/ParishSocietiesApp/ParishSocietiesApp';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -89,6 +92,10 @@ function App() {
           <Route path="/" element={<Home data={data} />} />
           <Route path="/about" element={<About />} />
           <Route path="/events" element={<Events />} />
+                    <Route path="/donation" element={<DonationPage />} />
+                                        <Route path="/gallery" element={<PhotoGallery />} />
+
+
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
           <Route
@@ -101,6 +108,7 @@ function App() {
               )
             }
           />
+          <Route path="/parish-groups/societies" element={<ParishSocietiesPage />} />
           <Route
             path="/admin"
             element={

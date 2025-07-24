@@ -16,6 +16,9 @@ import {
     { id: 'gallery', label: 'Photo Gallery', icon: Camera },
     { id: 'prayer-requests', label: 'Prayer Requests', icon: Heart },
         { id: 'post', label: 'Post', icon: Heart },
+                { id: 'donation', label: 'Donation page', icon: Heart },
+
+                { id: 'groups', label: 'Group page', icon: Heart },
 
     { id: 'footer', label: 'Footer', icon: Mail },
     { id: 'contact', label: 'Contact Info', icon: MapPin },
