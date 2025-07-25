@@ -36,7 +36,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://stfrancis-52b1.onrender.com',
+    'https://distinct-stranger-production.up.railway.app',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

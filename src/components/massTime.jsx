@@ -16,7 +16,7 @@ const MassScheduleComponent = () => {
     const fetchData = async () => {
       try {
         // Use the full backend URL
-        const response = await fetch('https://stfrancis-52b1.onrender.com/api/mass-schedule');
+        const response = await fetch('https://distinct-stranger-production.up.railway.app/api/mass-schedule');
         console.log(response);
         
         if (!response.ok) throw new Error('Failed to fetch mass schedule');

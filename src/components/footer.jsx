@@ -8,7 +8,7 @@ const Footer = () => {
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
-        const response = await fetch('https://stfrancis-52b1.onrender.com/api/footer');
+        const response = await fetch('https://distinct-stranger-production.up.railway.app/api/footer');
         if (!response.ok) {
           throw new Error('Failed to fetch footer data');
         }

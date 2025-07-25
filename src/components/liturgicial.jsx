@@ -10,7 +10,7 @@ const LiturgicalCalendar = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('https://stfrancis-52b1.onrender.com/api/liturgical-calendar/upcoming');
+        const response = await fetch('https://distinct-stranger-production.up.railway.app/api/liturgical-calendar/upcoming');
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();

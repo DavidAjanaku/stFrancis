@@ -9,7 +9,7 @@ const EventsSection = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('https://stfrancis-52b1.onrender.com/api/events');
+        const response = await fetch('https://distinct-stranger-production.up.railway.app/api/events');
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();

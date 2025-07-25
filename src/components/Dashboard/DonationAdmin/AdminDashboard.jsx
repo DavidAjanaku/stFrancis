@@ -34,13 +34,13 @@ const CategoriesAdmin = () => {
       try {
         setLoading(true);
         // Fetch donation categories
-        const categoriesResponse = await fetch('https://stfrancis-52b1.onrender.com/api/donations-sections/categories');
+        const categoriesResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/categories');
         if (!categoriesResponse.ok) throw new Error('Failed to fetch donation categories');
         const categoriesData = await categoriesResponse.json();
         setCategories(categoriesData);
 
         // Fetch hero content
-        const heroResponse = await fetch('https://stfrancis-52b1.onrender.com/api/donations-sections/hero');
+        const heroResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/hero');
         if (!heroResponse.ok) throw new Error('Failed to fetch hero content');
         const heroData = await heroResponse.json();
         setHeroContent(heroData);
@@ -77,7 +77,7 @@ const CategoriesAdmin = () => {
     if (!selectedCategory) return;
 
     try {
-      const response = await fetch(`'https://stfrancis-52b1.onrender.com/api/donations-sections/categories/${selectedCategory._id}`, {
+      const response = await fetch(`'https://distinct-stranger-production.up.railway.app/api/donations-sections/categories/${selectedCategory._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ const CategoriesAdmin = () => {
         return;
       }
 
-      const response = await fetch('https://stfrancis-52b1.onrender.com/api/donations-sections/categories', {
+      const response = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/categories', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -295,7 +295,7 @@ const CategoriesAdmin = () => {
                 >
                   <div className="h-48 overflow-hidden">
                     <img 
-                      src={`'https://stfrancis-52b1.onrender.com${category.image}`} 
+                      src={`'https://distinct-stranger-production.up.railway.app${category.image}`} 
                       alt={category.title} 
                       className="w-full h-full object-cover" 
                     />

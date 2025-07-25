@@ -20,7 +20,7 @@ const PhotoGallery = () => {
   useEffect(() => {
     const fetchGalleryImages = async () => {
       try {
-        const response = await fetch('https://stfrancis-52b1.onrender.com/api/gallery');
+        const response = await fetch('https://distinct-stranger-production.up.railway.app/api/gallery');
         if (!response.ok) throw new Error('Failed to fetch gallery images');
         const data = await response.json();
         // Filter active images

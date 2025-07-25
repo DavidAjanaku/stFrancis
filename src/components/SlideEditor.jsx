@@ -6,7 +6,7 @@ const SlideEditor = ({ slide, onSave, onCancel }) => {
   const [imagePreview, setImagePreview] = useState(slide.image || '');
   const [imageFile, setImageFile] = useState(null);
   const fileInputRef = useRef(null);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://stfrancis-52b1.onrender.com';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://distinct-stranger-production.up.railway.app';
 
   const handleInputChange = (field, value) => {
     if (field.includes('.')) {

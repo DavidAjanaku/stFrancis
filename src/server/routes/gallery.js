@@ -95,7 +95,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
   }
   
   // Return full URL for the image
-  const fullUrl = `'https://stfrancis-52b1.onrender.com/uploads/${req.file.filename}`;
+  const fullUrl = `'https://distinct-stranger-production.up.railway.app/uploads/${req.file.filename}`;
   
   console.log('File uploaded successfully:', {
     filename: req.file.filename,
