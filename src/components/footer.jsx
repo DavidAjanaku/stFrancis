@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Youtube } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Youtube, Settings } from 'lucide-react';
 
 const Footer = () => {
   const [footerData, setFooterData] = useState(null);
@@ -25,8 +25,13 @@ const Footer = () => {
   }, []);
 
   const handleClick = (link) => {
-    // In a real app, this would use your routing solution
-    console.log(`Navigation to: ${link}`);
+    // For admin link, use window.location to navigate
+    if (link === '/admin') {
+      window.location.href = '/admin';
+    } else {
+      // In a real app, this would use your routing solution
+      console.log(`Navigation to: ${link}`);
+    }
   };
 
   if (isLoading) {
@@ -195,6 +200,15 @@ const Footer = () => {
                 className="hover:text-white transition-colors"
               >
                 Terms of Service
+              </button>
+              {/* Admin Link */}
+              <button 
+                onClick={() => handleClick('/admin')} 
+                className="hover:text-white transition-colors flex items-center space-x-1"
+                title="Admin Panel"
+              >
+                <Settings size={14} />
+                <span>Admin</span>
               </button>
               <span>Built with ❤️ for our Parish</span>
             </div>
