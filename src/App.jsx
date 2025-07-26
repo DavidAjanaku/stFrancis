@@ -14,7 +14,7 @@ import PhotoGallery from './components/PhotoGallery';
 import ParishSocietiesPage from './components/ParishSocietiesApp/ParishSocietiesApp';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState({
     massSchedule: {
@@ -26,15 +26,33 @@ function App() {
   });
 
   useEffect(() => {
-    // Simplified authentication check using localStorage
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(token === 'demo-token');
-    setIsLoading(false);
+    // Enhanced authentication check with better error handling
+    const checkAuthentication = async () => {
+      try {
+        // Add a small delay to ensure localStorage is fully available
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const token = localStorage.getItem('token');
+        console.log('Authentication check - token found:', !!token);
+        console.log('Token value:', token);
+        
+        const authStatus = token === 'demo-token';
+        setIsAuthenticated(authStatus);
+        console.log('Authentication status set to:', authStatus);
+        
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+        console.log('Loading state set to false');
+      }
+    };
 
     // Fetch mass schedule data
     const fetchMassSchedule = async () => {
       try {
-        const response = await fetch('api/mass-schedule');
+        const response = await fetch('/api/mass-schedule');
         if (response.ok) {
           const scheduleData = await response.json();
           setData(prev => ({
@@ -47,17 +65,28 @@ function App() {
       }
     };
 
+    checkAuthentication();
     fetchMassSchedule();
   }, []);
 
   const handleLogin = () => {
-    localStorage.setItem('token', 'demo-token');
-    setIsAuthenticated(true);
+    try {
+      localStorage.setItem('token', 'demo-token');
+      setIsAuthenticated(true);
+      console.log('Login successful, auth state updated');
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
+    try {
+      localStorage.removeItem('token');
+      setIsAuthenticated(false);
+      console.log('Logout successful, auth state updated');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   // Update mass schedule data in parent state
@@ -73,12 +102,13 @@ function App() {
     }));
   };
 
-  if (isLoading || isAuthenticated === null) {
+  // Show loading screen while checking authentication
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
+          <p className="text-gray-600">Loading application...</p>
         </div>
       </div>
     );
@@ -92,12 +122,13 @@ function App() {
           <Route path="/" element={<Home data={data} />} />
           <Route path="/about" element={<About />} />
           <Route path="/events" element={<Events />} />
-                    <Route path="/donation" element={<DonationPage />} />
-                                        <Route path="/gallery" element={<PhotoGallery />} />
-
-
+          <Route path="/donation" element={<DonationPage />} />
+          <Route path="/gallery" element={<PhotoGallery />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/parish-groups/societies" element={<ParishSocietiesPage />} />
+          
+          {/* Login route */}
           <Route
             path="/login"
             element={
@@ -108,7 +139,8 @@ function App() {
               )
             }
           />
-          <Route path="/parish-groups/societies" element={<ParishSocietiesPage />} />
+          
+          {/* Protected admin route */}
           <Route
             path="/admin"
             element={
@@ -123,6 +155,8 @@ function App() {
               )
             }
           />
+          
+          {/* Catch-all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
