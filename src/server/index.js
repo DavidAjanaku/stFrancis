@@ -31,7 +31,7 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS Configuration
+// Enhanced CORS Configuration
 const corsOptions = {
   origin: [
     'http://localhost:5173',
@@ -40,16 +40,59 @@ const corsOptions = {
     'https://stfrancis-1.onrender.com',
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Accept',
+    'Origin',
+    'X-Requested-With',
+    'Cache-Control',
+    'Pragma',
+    'Expires',
+    'If-None-Match',
+    'If-Modified-Since'
+  ],
+  exposedHeaders: [
+    'Content-Length', 
+    'Content-Type',
+    'Cache-Control',
+    'ETag',
+    'Last-Modified'
+  ],
   optionsSuccessStatus: 200,
+  maxAge: 86400, // 24 hours preflight cache
 };
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Add cache control middleware for static assets and API responses
+app.use((req, res, next) => {
+  // Set cache headers for static assets
+  if (req.path.startsWith('/uploads/')) {
+    res.set('Cache-Control', 'public, max-age=31536000'); // 1 year for images
+    res.set('ETag', `"${Date.now()}"`);
+  }
+  
+  // Set cache headers for API routes that can be cached
+  if (req.path.includes('/api/hero-slides') && req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes for hero slides
+  }
+  
+  if (req.path.includes('/api/about-section') && req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=600'); // 10 minutes for about section
+  }
+  
+  if (req.path.includes('/api/footer') && req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes for footer
+  }
+  
+  next();
+});
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // Create uploads directory if not exists
@@ -66,13 +109,29 @@ if (!fs.existsSync(heroUploadsPath)) {
 }
 console.log('Hero images directory:', heroUploadsPath);
 
-// Serve uploads statically
-app.use('/uploads', express.static(uploadsPath));
+// Serve uploads statically with optimized caching
+app.use('/uploads', express.static(uploadsPath, {
+  maxAge: '1y', // Cache for 1 year
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // Set specific cache headers for different file types
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp')) {
+      res.set('Cache-Control', 'public, max-age=31536000'); // 1 year for images
+    }
+  }
+}));
 
-// Database Connection
+// Database Connection with connection pooling
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      bufferCommands: false, // Disable mongoose buffering
+      bufferMaxEntries: 0 // Disable mongoose buffering
+    });
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -80,7 +139,13 @@ const connectDB = async () => {
   }
 };
 
-// Routes
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Routes with error handling
 try {
   app.use('/api/auth', authRoutes);
   console.log('authRoutes loaded');
@@ -140,37 +205,84 @@ const scheduleCleanup = async () => {
   }
 };
 
-// Health check route
+// Health check route with detailed info
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    uptime: process.uptime()
+  });
 });
 
 // Test route
 app.get('/test', (req, res) => {
-  res.json({ message: 'Server is working!' });
+  res.json({ 
+    message: 'Server is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({
+    message: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
+  console.error('Error stack:', err.stack);
+  console.error('Error message:', err.message);
+  console.error('Request path:', req.path);
+  console.error('Request method:', req.method);
+  
+  res.status(err.status || 500).json({
     message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  await mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully');
+  await mongoose.connection.close();
+  process.exit(0);
 });
 
 // Start server
 const startServer = async () => {
-  await connectDB();
+  try {
+    await connectDB();
 
-  await scheduleCleanup(); // Initial cleanup
+    await scheduleCleanup(); // Initial cleanup
 
-  // Schedule daily cleanup
-  setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
+    // Schedule daily cleanup
+    setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
 
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 };
 
 startServer();
