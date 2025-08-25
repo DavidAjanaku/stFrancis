@@ -15,7 +15,7 @@ const Sidebar = ({
         sidebarOpen ? 'w-64' : 'w-16'
       } bg-amber-50 shadow-xl transition-all duration-300 fixed left-0 top-0 h-full z-50 flex flex-col border-r border-amber-200`}
     >
-      {/* Header */}
+     
       <div className="flex items-center justify-between p-4 border-b border-amber-200 bg-gradient-to-r from-amber-800 to-amber-900 text-white min-h-[72px]">
         {sidebarOpen && (
           <div className="flex items-center gap-2">
