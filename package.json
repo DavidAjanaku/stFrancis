@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "Backend API for Church Website",
   "type": "module",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon server.js",
+    "dev": "nodemon index.js",
     "build": "echo 'No build step required for backend'",
-    "railway:start": "node server.js",
+    "railway:start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["express", "mongodb", "church", "api"],
