@@ -39,6 +39,7 @@ const corsOptions = {
     'https://distinct-stranger-production.up.railway.app',
     'https://stfrancis-1.onrender.com',
     'https://stfrancis-52b1.onrender.com/',
+    'https://st-francis-cc-oregun.ng'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
