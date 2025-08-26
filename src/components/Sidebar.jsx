@@ -10,12 +10,8 @@ const Sidebar = ({
   handleLogout
 }) => {
   return (
-    <div 
-      className={`${
-        sidebarOpen ? 'w-64' : 'w-16'
-      } bg-amber-50 shadow-xl transition-all duration-300 fixed left-0 top-0 h-full z-50 flex flex-col border-r border-amber-200`}
-    >
-     
+    <div className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-amber-50 shadow-xl transition-all duration-300 h-full flex flex-col border-r border-amber-200`}>
+      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-amber-200 bg-gradient-to-r from-amber-800 to-amber-900 text-white min-h-[72px]">
         {sidebarOpen && (
           <div className="flex items-center gap-2">
@@ -32,7 +28,7 @@ const Sidebar = ({
         </button>
       </div>
 
-      {/* Navigation - Scrollable content area */}
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2">
         <ul className="space-y-1">
           {menuItems.map(item => {
@@ -54,7 +50,6 @@ const Sidebar = ({
                   {sidebarOpen && (
                     <span className="font-medium truncate">{item.label}</span>
                   )}
-                  
                   {/* Tooltip for collapsed state */}
                   {!sidebarOpen && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-amber-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
@@ -68,10 +63,10 @@ const Sidebar = ({
         </ul>
       </nav>
 
-      {/* Sign Out Button - Fixed at bottom */}
+      {/* Sign Out Button */}
       <div className="p-4 border-t border-amber-200 bg-amber-100 mt-auto">
         <button
-          onClick={() => handleLogout()}
+          onClick={handleLogout}
           className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group relative ${
             sidebarOpen
               ? 'text-red-700 hover:bg-red-100 hover:text-red-800 hover:shadow-sm'
@@ -83,7 +78,6 @@ const Sidebar = ({
           {sidebarOpen && (
             <span className="font-medium">Sign Out</span>
           )}
-          
           {/* Tooltip for collapsed state */}
           {!sidebarOpen && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-amber-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">

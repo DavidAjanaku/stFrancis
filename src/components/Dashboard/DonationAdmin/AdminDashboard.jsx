@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Type, Copy, Plus } from 'lucide-react';
+import { Edit2, Type, Copy, Plus, Trash2 } from 'lucide-react';
 
 const CategoriesAdmin = () => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -77,11 +77,12 @@ const CategoriesAdmin = () => {
     if (!selectedCategory) return;
 
     try {
-      const response = await fetch(`'https://distinct-stranger-production.up.railway.app/api/donations-sections/categories/${selectedCategory._id}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://distinct-stranger-production.up.railway.app/api/donations-sections/categories/${selectedCategory._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(selectedCategory),
       });
@@ -96,6 +97,77 @@ const CategoriesAdmin = () => {
     } catch (err) {
       console.error('Error updating category:', err);
       alert('Failed to update bank details.');
+    }
+  };
+
+  const handleSaveHeroChanges = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/hero', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(heroContent)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update hero content');
+      }
+
+      const updatedHero = await response.json();
+      setHeroContent(updatedHero);
+      
+      alert('Hero content updated successfully!');
+      setShowHeroModal(false);
+      
+    } catch (error) {
+      console.error('Error updating hero content:', error);
+      alert('Failed to update hero content. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId, categoryTitle) => {
+    const isConfirmed = window.confirm(
+      `Are you sure you want to delete "${categoryTitle}"? This action cannot be undone.`
+    );
+    
+    if (!isConfirmed) return;
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(
+        `https://distinct-stranger-production.up.railway.app/api/donations-sections/categories/${categoryId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete donation category');
+      }
+
+      setCategories(prevCategories => 
+        prevCategories.filter(category => category._id !== categoryId)
+      );
+      
+      alert('Donation category deleted successfully!');
+      
+    } catch (error) {
+      console.error('Error deleting donation category:', error);
+      alert('Failed to delete donation category. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -295,7 +367,7 @@ const CategoriesAdmin = () => {
                 >
                   <div className="h-48 overflow-hidden">
                     <img 
-                      src={`'https://distinct-stranger-production.up.railway.app${category.image}`} 
+                      src={`https://distinct-stranger-production.up.railway.app${category.image}`}
                       alt={category.title} 
                       className="w-full h-full object-cover" 
                     />
@@ -363,18 +435,30 @@ const CategoriesAdmin = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleEditCategory(category)}
-                        className={`w-full font-semibold py-2 px-4 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg ${
-                          category.theme === 'brown'
-                            ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
-                            : category.theme === 'harvest'
-                            ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
-                            : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
-                        }`}
-                      >
-                        Edit Bank Details
-                      </button>
+                      {/* Action buttons */}
+                      <div className="flex justify-between items-center space-x-2">
+                        <button
+                          onClick={() => handleEditCategory(category)}
+                          className={`flex-1 font-semibold py-2 px-4 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg ${
+                            category.theme === 'brown'
+                              ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
+                              : category.theme === 'harvest'
+                              ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
+                              : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+                          }`}
+                        >
+                          <Edit2 className="w-4 h-4 inline mr-1" />
+                          Edit
+                        </button>
+                        
+                        <button
+                          onClick={() => handleDeleteCategory(category._id, category.title)}
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -558,6 +642,7 @@ const CategoriesAdmin = () => {
           </div>
         </div>
       )}
+
 
       {/* Edit Hero Content Modal */}
       {showHeroModal && (

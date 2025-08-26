@@ -10,7 +10,7 @@ import {
     { id: 'homepage', label: 'Homepage', icon: Globe },
     { id: 'mass-schedule', label: 'Mass Schedule', icon: Clock },
     { id: 'about-us', label: 'About Us', icon: Info },
-    { id: 'ministries', label: 'Ministries', icon: Users },
+    // { id: 'ministries', label: 'Ministries', icon: Users },
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'liturgical', label: 'Liturgical Calendar', icon: BookOpen },
     { id: 'gallery', label: 'Photo Gallery', icon: Camera },

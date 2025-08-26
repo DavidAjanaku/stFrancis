@@ -44,12 +44,12 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
         />;
       case 'about-us':
         return <AboutSection {...commonProps} />;
-      case 'ministries':
-        return <Ministries {...commonProps} />;
+      // case 'ministries':
+      //   return <Ministries {...commonProps} />;
       case 'events':
         return <Events {...commonProps} />;
-      // case 'prayer-requests':
-      // return <PrayerRequests {...commonProps} />;
+      case 'prayer-requests':
+        return <PrayerRequests {...commonProps} />;
       case 'post':
         return <DonationAdmin {...commonProps} />;
       case 'liturgical':
@@ -77,7 +77,8 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 relative">
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -87,20 +88,18 @@ const ChurchAdminDashboard = ({ data, onSaveMassSchedule, handleLogout }) => {
       />
       
       {/* Main Content Area */}
-      <div 
-        className={`flex-1 overflow-auto transition-all duration-300 ${
-          sidebarOpen ? 'ml-64' : 'ml-16'
-        }`}
-      >
-        <div className="p-8">
-          {renderContent()}
-        </div>
+      <div className="flex-1 overflow-hidden">
+        <main className="h-full overflow-y-auto">
+          <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+            {renderContent()}
+          </div>
+        </main>
       </div>
 
-      {/* Overlay for mobile when sidebar is open */}
+      {/* Mobile overlay when sidebar is open */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className=" lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
