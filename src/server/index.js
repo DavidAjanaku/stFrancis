@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import os from 'os';
 
 // Routes (import your actual routes)
 import authRoutes from './routes/auth.js';
@@ -16,6 +17,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const HOST = '0.0.0.0'; // CRITICAL: Explicitly bind to all interfaces
 
 // Railway environment detection
 const isRailway = process.env.RAILWAY_ENVIRONMENT === 'production' || 
@@ -26,7 +28,17 @@ console.log('🚄 Railway Environment detected:', isRailway);
 console.log('🔧 Environment variables:', {
   PORT: process.env.PORT,
   NODE_ENV: process.env.NODE_ENV,
-  RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
+  RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
+  MONGO_URI_SET: !!process.env.MONGO_URI
+});
+
+// Debug network interfaces
+console.log('🌐 Network interfaces:');
+const interfaces = os.networkInterfaces();
+Object.keys(interfaces).forEach(iface => {
+  interfaces[iface].forEach(addr => {
+    console.log(`  ${iface}: ${addr.address} (${addr.family})`);
+  });
 });
 
 // Trust Railway's proxy for proper IP and protocol handling
@@ -64,9 +76,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
 
-// Body parsing middleware with increased limits for Railway
+// Body parsing middleware
 app.use(express.json({ 
   limit: '50mb',
   verify: (req, res, buf) => {
@@ -89,6 +108,7 @@ app.use((req, res, next) => {
   console.log('Method:', req.method);
   console.log('Path:', req.path);
   console.log('Origin:', req.headers.origin);
+  console.log('Host:', req.headers.host);
   console.log('X-Forwarded-Proto:', req.headers['x-forwarded-proto']);
   console.log('X-Forwarded-Host:', req.headers['x-forwarded-host']);
   console.log('==================\n');
@@ -104,7 +124,8 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     platform: 'railway',
     memory: process.memoryUsage(),
-    node: process.version
+    node: process.version,
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
@@ -113,7 +134,21 @@ app.get('/ping', (req, res) => {
     message: 'pong', 
     timestamp: new Date().toISOString(),
     server: 'express',
-    proxy: 'railway'
+    proxy: 'railway',
+    port: PORT,
+    host: HOST
+  });
+});
+
+// Internal test endpoint for Railway networking
+app.get('/internal-test', (req, res) => {
+  res.json({
+    server: 'running',
+    port: PORT,
+    host: HOST,
+    containerHostname: os.hostname(),
+    time: new Date().toISOString(),
+    networkInterfaces: interfaces
   });
 });
 
@@ -122,6 +157,7 @@ app.get('/api/config', (req, res) => {
   res.json({
     server: {
       port: PORT,
+      host: HOST,
       environment: process.env.NODE_ENV,
       railway: isRailway,
       trustProxy: app.get('trust proxy')
@@ -144,6 +180,10 @@ app.use('/api/auth', authRoutes);
 // Database connection with retry logic for Railway
 const connectDB = async (retries = 5, delay = 3000) => {
   try {
+    if (!process.env.MONGO_URI) {
+      throw new Error('MONGO_URI environment variable is not set');
+    }
+    
     await mongoose.connect(process.env.MONGO_URI, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
@@ -160,7 +200,7 @@ const connectDB = async (retries = 5, delay = 3000) => {
       setTimeout(() => connectDB(retries - 1, delay), delay);
     } else {
       console.error('❌ Failed to connect to MongoDB after multiple attempts');
-      // Don't exit in production, allow the server to start without DB
+      // In production, we can continue without DB for health checks
       if (process.env.NODE_ENV === 'development') {
         process.exit(1);
       }
@@ -219,18 +259,32 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+// Handle uncaught errors
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
+  process.exit(1);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
+
 // Start server
 const startServer = async () => {
   try {
+    console.log('🚀 Starting server...');
+    
     // Connect to DB (will retry automatically)
     await connectDB();
     
-    const server = app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, HOST, () => {
       console.log('\n🎉 Server started successfully!');
-      console.log(`📍 Port: ${PORT}`);
+      console.log(`📍 Listening on: ${HOST}:${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🚄 Railway: ${isRailway}`);
-      console.log(`🔗 Health check: https://distinct-stranger-production.up.railway.app/health`);
+      console.log(`🔗 External URL: https://distinct-stranger-production.up.railway.app`);
+      console.log(`🏥 Health check: /health`);
       console.log(`📊 Ready to accept requests...\n`);
     });
 
@@ -243,6 +297,7 @@ const startServer = async () => {
       console.error('❌ Server error:', error);
       if (error.code === 'EADDRINUSE') {
         console.log(`Port ${PORT} is already in use`);
+        process.exit(1);
       }
     });
 
