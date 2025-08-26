@@ -7,309 +7,250 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// Routes
+// Routes (import your actual routes)
 import authRoutes from './routes/auth.js';
-import massScheduleRoutes from './routes/massSchedule.js';
-import aboutSectionRoutes from './routes/aboutSectionRoutes.js';
-import eventsRoutes from './routes/events.js';
-import galleryRouter from './routes/gallery.js';
-import prayerRequestRoutes from './routes/prayerRequests.js';
-import donationSectionRoutes from './routes/postSectionRoutes.js';
-import donationROutes from './routes/donationSectionRoutes.js';
-import liturgicalCalendarRoutes from './routes/liturgicalCalendarRoutes.js';
 import heroSlideRoutes from './routes/heroSlideRoutes.js';
-import contactRoutes from './routes/contactRoutes.js';
-import footerRoutes from './routes/footerRoutes.js';
-import parishSocietyRoutes from './routes/parishSocietyRoutes.js';
+// ... import other routes
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Get __dirname for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Railway environment detection
+const isRailway = process.env.RAILWAY_ENVIRONMENT === 'production' || 
+                 process.env.RAILWAY === 'true' ||
+                 process.env.NODE_ENV === 'production';
 
-// Environment-specific CORS configuration
+console.log('🚄 Railway Environment detected:', isRailway);
+console.log('🔧 Environment variables:', {
+  PORT: process.env.PORT,
+  NODE_ENV: process.env.NODE_ENV,
+  RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
+});
+
+// Trust Railway's proxy for proper IP and protocol handling
+app.set('trust proxy', 1);
+
+// CORS configuration for Railway
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://distinct-stranger-production.up.railway.app',
-        'https://stfrancis-1.onrender.com'
-      ]
-    : [
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'https://distinct-stranger-production.up.railway.app',
-        'https://stfrancis-1.onrender.com',
-      ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://distinct-stranger-production.up.railway.app',
+      'https://stfrancis-1.onrender.com',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'https://localhost:5173',
+      'https://127.0.0.1:5173'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.railway.app')) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'Accept',
-    'Origin',
-    'X-Requested-With',
-    'Cache-Control',
-    'Pragma',
-    'Expires',
-    'If-None-Match',
-    'If-Modified-Since'
-  ],
-  exposedHeaders: [
-    'Content-Length', 
-    'Content-Type',
-    'Cache-Control',
-    'ETag',
-    'Last-Modified'
-  ],
-  optionsSuccessStatus: 200,
-  maxAge: 86400, // 24 hours preflight cache
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 };
 
 // Middleware
 app.use(cors(corsOptions));
 
-// Handle OPTIONS requests explicitly - CRITICAL FIX
-app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', corsOptions.origin.join(','));
-  res.setHeader('Access-Control-Allow-Methods', corsOptions.methods.join(','));
-  res.setHeader('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', corsOptions.maxAge);
-  res.status(200).end();
-});
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
-// Add cache control middleware for static assets and API responses
-app.use((req, res, next) => {
-  // Set cache headers for static assets
-  if (req.path.startsWith('/uploads/')) {
-    res.set('Cache-Control', 'public, max-age=31536000'); // 1 year for images
-    res.set('ETag', `"${Date.now()}"`);
-  }
-  
-  // Set cache headers for API routes that can be cached
-  if (req.path.includes('/api/hero-slides') && req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes for hero slides
-  }
-  
-  if (req.path.includes('/api/about-section') && req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=600'); // 10 minutes for about section
-  }
-  
-  if (req.path.includes('/api/footer') && req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes for footer
-  }
-  
-  next();
-});
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(cookieParser());
-
-// Request logging middleware for debugging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-  if (req.method === 'OPTIONS') {
-    console.log('OPTIONS preflight request received');
-  }
-  next();
-});
-
-// Create uploads directory if not exists
-const uploadsPath = path.resolve(process.cwd(), 'src/data/uploads');
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-}
-console.log('Uploads directory:', uploadsPath);
-
-// Create hero image directory
-const heroUploadsPath = path.join(uploadsPath, 'hero');
-if (!fs.existsSync(heroUploadsPath)) {
-  fs.mkdirSync(heroUploadsPath, { recursive: true });
-}
-console.log('Hero images directory:', heroUploadsPath);
-
-// Serve uploads statically with optimized caching
-app.use('/uploads', express.static(uploadsPath, {
-  maxAge: '1y', // Cache for 1 year
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    // Set specific cache headers for different file types
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp')) {
-      res.set('Cache-Control', 'public, max-age=31536000'); // 1 year for images
-    }
+// Body parsing middleware with increased limits for Railway
+app.use(express.json({ 
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
   }
 }));
 
-// Database Connection with connection pooling
-const connectDB = async () => {
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '50mb',
+  parameterLimit: 100000
+}));
+
+app.use(cookieParser());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log('\n=== REQUEST LOG ===');
+  console.log('Time:', new Date().toISOString());
+  console.log('Method:', req.method);
+  console.log('Path:', req.path);
+  console.log('Origin:', req.headers.origin);
+  console.log('X-Forwarded-Proto:', req.headers['x-forwarded-proto']);
+  console.log('X-Forwarded-Host:', req.headers['x-forwarded-host']);
+  console.log('==================\n');
+  next();
+});
+
+// Health check endpoints (critical for Railway)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    platform: 'railway',
+    memory: process.memoryUsage(),
+    node: process.version
+  });
+});
+
+app.get('/ping', (req, res) => {
+  res.json({ 
+    message: 'pong', 
+    timestamp: new Date().toISOString(),
+    server: 'express',
+    proxy: 'railway'
+  });
+});
+
+// Test endpoint to check server configuration
+app.get('/api/config', (req, res) => {
+  res.json({
+    server: {
+      port: PORT,
+      environment: process.env.NODE_ENV,
+      railway: isRailway,
+      trustProxy: app.get('trust proxy')
+    },
+    headers: {
+      host: req.headers.host,
+      'x-forwarded-proto': req.headers['x-forwarded-proto'],
+      'x-forwarded-host': req.headers['x-forwarded-host'],
+      origin: req.headers.origin
+    },
+    time: new Date().toISOString()
+  });
+});
+
+// Your routes
+app.use('/api/hero-slides', heroSlideRoutes);
+app.use('/api/auth', authRoutes);
+// ... add other routes here
+
+// Database connection with retry logic for Railway
+const connectDB = async (retries = 5, delay = 3000) => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      retryWrites: true,
+      w: 'majority'
     });
-    console.log('MongoDB connected successfully');
+    console.log('✅ MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    // Don't exit process in production, allow retries
-    if (process.env.NODE_ENV === 'development') {
-      process.exit(1);
+    console.error('❌ MongoDB connection error:', error.message);
+    
+    if (retries > 0) {
+      console.log(`🔄 Retrying connection in ${delay}ms... (${retries} retries left)`);
+      setTimeout(() => connectDB(retries - 1, delay), delay);
+    } else {
+      console.error('❌ Failed to connect to MongoDB after multiple attempts');
+      // Don't exit in production, allow the server to start without DB
+      if (process.env.NODE_ENV === 'development') {
+        process.exit(1);
+      }
     }
   }
 };
 
-// Routes with error handling
-try {
-  app.use('/api/auth', authRoutes);
-  console.log('authRoutes loaded');
-
-  app.use('/api/mass-schedule', massScheduleRoutes);
-  console.log('massScheduleRoutes loaded');
-
-  app.use('/api/about-section', aboutSectionRoutes);
-  console.log('aboutSectionRoutes loaded');
-
-  app.use('/api/events', eventsRoutes);
-  console.log('eventsRoutes loaded');
-
-  app.use('/api/gallery', galleryRouter);
-  console.log('galleryRouter loaded');
-
-  app.use('/api/prayer-requests', prayerRequestRoutes);
-  console.log('prayerRequestRoutes loaded');
-
-  app.use('/api/donation-sections', donationSectionRoutes);
-  console.log('donationSectionRoutes loaded');
-
-  app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
-  console.log('liturgicalCalendarRoutes loaded');
-
-  app.use('/api/hero-slides', heroSlideRoutes);
-  console.log('heroSlideRoutes loaded');
-
-  app.use('/api/contact', contactRoutes);
-  console.log('contactRoutes loaded');
-
-  app.use('/api/footer', footerRoutes);
-  console.log('footerRoutes loaded');
-
-  app.use('/api/donations-sections', donationROutes);
-  console.log('donationROutes loaded');
-
-  app.use('/api/parish-societies', parishSocietyRoutes);
-  console.log('parishSocietyRoutes loaded');
-} catch (err) {
-  console.error('Error loading route:', err);
-}
-
-// Cleanup old mass schedules
-const scheduleCleanup = async () => {
-  try {
-    const schedules = await mongoose.model('MassSchedule').find().sort({ createdAt: -1 });
-    if (schedules.length > 5) {
-      const idsToDelete = schedules.slice(5).map((s) => s._id);
-      await mongoose.model('MassSchedule').deleteMany({
-        _id: { $in: idsToDelete },
-      });
-      console.log(`Cleaned up ${idsToDelete.length} old mass schedules`);
-    }
-  } catch (error) {
-    console.error('Schedule cleanup error:', error);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  console.error('Stack:', err.stack);
+  
+  if (err.name === 'MongoServerError') {
+    return res.status(503).json({
+      error: 'Database temporarily unavailable',
+      message: 'Please try again later'
+    });
   }
-};
-
-// Health check route with detailed info
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    uptime: process.uptime()
-  });
-});
-
-// Simple health check without DB dependency
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    server: 'running'
-  });
-});
-
-// Test route
-app.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Server is working!',
-    timestamp: new Date().toISOString()
+  
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      error: 'CORS policy violation',
+      message: 'Origin not allowed'
+    });
+  }
+  
+  res.status(500).json({
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
 
 // 404 handler
-app.use((req, res, next) => {
+app.use('*', (req, res) => {
   res.status(404).json({
-    message: 'Route not found',
-    path: req.path,
-    method: req.method
-  });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error stack:', err.stack);
-  console.error('Error message:', err.message);
-  console.error('Request path:', req.path);
-  console.error('Request method:', req.method);
-  
-  res.status(err.status || 500).json({
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    error: 'Endpoint not found',
     path: req.path,
     method: req.method,
-    timestamp: new Date().toISOString()
+    suggestion: 'Check /health for server status'
   });
 });
 
-// Graceful shutdown handling
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await mongoose.connection.close();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await mongoose.connection.close();
-  process.exit(0);
-});
-
-// Start server
-const startServer = async () => {
+// Graceful shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received, shutting down gracefully...`);
   try {
-    await connectDB();
-
-    await scheduleCleanup(); // Initial cleanup
-
-    // Schedule daily cleanup
-    setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
-
-    // CRITICAL FIX: Bind to 0.0.0.0 for production environments
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
-      console.log(`Server listening on all interfaces (0.0.0.0:${PORT})`);
-    });
+    await mongoose.connection.close();
+    console.log('✅ MongoDB connection closed');
+    process.exit(0);
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('❌ Error during shutdown:', error);
     process.exit(1);
   }
 };
 
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Start server
+const startServer = async () => {
+  try {
+    // Connect to DB (will retry automatically)
+    await connectDB();
+    
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n🎉 Server started successfully!');
+      console.log(`📍 Port: ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🚄 Railway: ${isRailway}`);
+      console.log(`🔗 Health check: https://distinct-stranger-production.up.railway.app/health`);
+      console.log(`📊 Ready to accept requests...\n`);
+    });
+
+    // Railway-specific server settings
+    server.keepAliveTimeout = 120000;
+    server.headersTimeout = 120000;
+    
+    // Handle server errors
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+      if (error.code === 'EADDRINUSE') {
+        console.log(`Port ${PORT} is already in use`);
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Initialize server
 startServer();
