@@ -31,14 +31,26 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Enhanced CORS Configuration
+// Enhanced CORS Configuration - FIXED VERSION
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'https://distinct-stranger-production.up.railway.app',
-    'https://stfrancis-1.onrender.com',
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'https://distinct-stranger-production.up.railway.app',
+      'https://stfrancis-1.onrender.com',
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
   allowedHeaders: [
@@ -64,8 +76,11 @@ const corsOptions = {
   maxAge: 86400, // 24 hours preflight cache
 };
 
-// Middleware
+// Apply CORS middleware FIRST - before any other middleware
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly - MOVED UP
+app.options('*', cors(corsOptions));
 
 // Add cache control middleware for static assets and API responses
 app.use((req, res, next) => {
@@ -88,6 +103,12 @@ app.use((req, res, next) => {
     res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes for footer
   }
   
+  next();
+});
+
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
   next();
 });
 
@@ -137,12 +158,6 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-// Request logging middleware for debugging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
 
 // Routes with error handling
 try {
@@ -210,7 +225,16 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    cors: {
+      origin: req.headers.origin,
+      allowedOrigins: [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://distinct-stranger-production.up.railway.app',
+        'https://stfrancis-1.onrender.com',
+      ]
+    }
   });
 });
 
@@ -218,12 +242,10 @@ app.get('/api/health', (req, res) => {
 app.get('/test', (req, res) => {
   res.json({ 
     message: 'Server is working!',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    origin: req.headers.origin
   });
 });
-
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
 
 // 404 handler
 app.use((req, res, next) => {
@@ -234,12 +256,28 @@ app.use((req, res, next) => {
   });
 });
 
-// Error handling middleware
+// Error handling middleware - Enhanced for CORS debugging
 app.use((err, req, res, next) => {
   console.error('Error stack:', err.stack);
   console.error('Error message:', err.message);
   console.error('Request path:', req.path);
   console.error('Request method:', req.method);
+  console.error('Request origin:', req.headers.origin);
+  
+  // Check if it's a CORS error
+  if (err.message.includes('CORS')) {
+    return res.status(403).json({
+      message: 'CORS policy violation',
+      error: err.message,
+      origin: req.headers.origin,
+      allowedOrigins: [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://distinct-stranger-production.up.railway.app',
+        'https://stfrancis-1.onrender.com',
+      ]
+    });
+  }
   
   res.status(err.status || 500).json({
     message: 'Internal server error',
@@ -277,6 +315,12 @@ const startServer = async () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
+      console.log('CORS enabled for origins:', [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://distinct-stranger-production.up.railway.app',
+        'https://stfrancis-1.onrender.com',
+      ]);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
