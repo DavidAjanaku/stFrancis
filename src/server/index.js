@@ -31,14 +31,19 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Enhanced CORS Configuration
+// Environment-specific CORS configuration
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'https://distinct-stranger-production.up.railway.app',
-    'https://stfrancis-1.onrender.com',
-  ],
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        'https://distinct-stranger-production.up.railway.app',
+        'https://stfrancis-1.onrender.com'
+      ]
+    : [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://distinct-stranger-production.up.railway.app',
+        'https://stfrancis-1.onrender.com',
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
   allowedHeaders: [
@@ -67,6 +72,16 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 
+// Handle OPTIONS requests explicitly - CRITICAL FIX
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', corsOptions.origin.join(','));
+  res.setHeader('Access-Control-Allow-Methods', corsOptions.methods.join(','));
+  res.setHeader('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', corsOptions.maxAge);
+  res.status(200).end();
+});
+
 // Add cache control middleware for static assets and API responses
 app.use((req, res, next) => {
   // Set cache headers for static assets
@@ -94,6 +109,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
+
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  if (req.method === 'OPTIONS') {
+    console.log('OPTIONS preflight request received');
+  }
+  next();
+});
 
 // Create uploads directory if not exists
 const uploadsPath = path.resolve(process.cwd(), 'src/data/uploads');
@@ -129,20 +153,16 @@ const connectDB = async () => {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-      // Removed deprecated options: bufferCommands and bufferMaxEntries
     });
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    process.exit(1);
+    // Don't exit process in production, allow retries
+    if (process.env.NODE_ENV === 'development') {
+      process.exit(1);
+    }
   }
 };
-
-// Request logging middleware for debugging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
 
 // Routes with error handling
 try {
@@ -214,6 +234,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Simple health check without DB dependency
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    server: 'running'
+  });
+});
+
 // Test route
 app.get('/test', (req, res) => {
   res.json({ 
@@ -221,9 +250,6 @@ app.get('/test', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
 
 // 404 handler
 app.use((req, res, next) => {
@@ -273,10 +299,12 @@ const startServer = async () => {
     // Schedule daily cleanup
     setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
 
+    // CRITICAL FIX: Bind to 0.0.0.0 for production environments
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
+      console.log(`Server listening on all interfaces (0.0.0.0:${PORT})`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
