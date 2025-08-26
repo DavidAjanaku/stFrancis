@@ -1,7 +1,0 @@
-{
-  "build": {
-    "root": "src/server",
-    "buildCommand": "npm install",
-    "startCommand": "npm start"
-  }
-}
