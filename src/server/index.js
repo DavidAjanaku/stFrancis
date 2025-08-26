@@ -36,7 +36,7 @@ console.log('Environment:', process.env.NODE_ENV || 'development');
 console.log('Port:', PORT);
 console.log('Railway Domain:', process.env.RAILWAY_PUBLIC_DOMAIN || 'not set');
 
-// Enhanced CORS Configuration - FIXED VERSION
+// Simplified CORS Configuration
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('CORS Check - Origin:', origin);
@@ -53,227 +53,107 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:5000',
       'https://distinct-stranger-production.up.railway.app',
-      'https://stfrancis-1.onrender.com',
-      // Add pattern for any Railway domain
-      /^https:\/\/.*\.up\.railway\.app$/
+      'https://stfrancis-1.onrender.com'
     ];
     
-    // Check if origin is allowed
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === 'string') {
-        return allowedOrigin === origin;
-      } else if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin);
-      }
-      return false;
-    });
+    // Check Railway domains dynamically
+    const isRailwayDomain = origin.match(/^https:\/\/.*\.up\.railway\.app$/);
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isInAllowedList = allowedOrigins.includes(origin);
     
-    if (isAllowed) {
+    if (isInAllowedList || isRailwayDomain || isLocalhost) {
       console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
       console.log('❌ Origin blocked:', origin);
-      console.log('Allowed origins:', allowedOrigins);
-      
-      // In development, be more lenient
+      // In non-production, allow anyway
       if (process.env.NODE_ENV !== 'production') {
         console.log('🔧 Development mode - allowing anyway');
         callback(null, true);
       } else {
-        // Still allow localhost in production for testing
-        if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
-          console.log('🔧 Localhost detected - allowing');
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
+        callback(null, false); // Don't throw error, just deny
       }
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Content-Type', 
     'Authorization', 
     'Accept',
     'Origin',
-    'X-Requested-With',
-    'Cache-Control',
-    'Pragma',
-    'Expires',
-    'If-None-Match',
-    'If-Modified-Since'
-  ],
-  exposedHeaders: [
-    'Content-Length', 
-    'Content-Type',
-    'Cache-Control',
-    'ETag',
-    'Last-Modified'
+    'X-Requested-With'
   ],
   optionsSuccessStatus: 200,
-  maxAge: 86400, // 24 hours preflight cache
+  maxAge: 86400
 };
 
-// Apply CORS middleware FIRST - before any other middleware
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly - MOVED UP
-app.options('*', cors(corsOptions));
-
-// Add manual CORS headers as backup
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} from origin: ${origin || 'no-origin'}`);
-  
-  // Set CORS headers manually as backup
+// Simplified preflight handler
+app.options('*', (req, res) => {
+  console.log('Preflight request for:', req.path, 'from origin:', req.headers.origin);
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,Origin,X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, Cache-Control, Pragma, Expires, If-None-Match, If-Modified-Since');
-  
-  // Handle preflight manually as backup
-  if (req.method === 'OPTIONS') {
-    console.log('Manual preflight handler for:', req.path);
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    return res.status(200).end();
-  }
-  
-  next();
+  res.sendStatus(200);
 });
 
-// Add cache control middleware for static assets and API responses
-app.use((req, res, next) => {
-  // Set cache headers for static assets
-  if (req.path.startsWith('/uploads/')) {
-    res.set('Cache-Control', 'public, max-age=31536000'); // 1 year for images
-    res.set('ETag', `"${Date.now()}"`);
-  }
-  
-  // Set cache headers for API routes that can be cached
-  if (req.path.includes('/api/hero-slides') && req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes for hero slides
-  }
-  
-  if (req.path.includes('/api/about-section') && req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=600'); // 10 minutes for about section
-  }
-  
-  if (req.path.includes('/api/footer') && req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes for footer
-  }
-  
-  next();
-});
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Basic middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Create uploads directory if not exists
 const uploadsPath = path.resolve(process.cwd(), 'src/data/uploads');
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-}
-console.log('Uploads directory:', uploadsPath);
-
-// Create hero image directory
-const heroUploadsPath = path.join(uploadsPath, 'hero');
-if (!fs.existsSync(heroUploadsPath)) {
-  fs.mkdirSync(heroUploadsPath, { recursive: true });
-}
-console.log('Hero images directory:', heroUploadsPath);
-
-// Serve uploads statically with optimized caching
-app.use('/uploads', express.static(uploadsPath, {
-  maxAge: '1y', // Cache for 1 year
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    // Set specific cache headers for different file types
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp')) {
-      res.set('Cache-Control', 'public, max-age=31536000'); // 1 year for images
-    }
+try {
+  if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath, { recursive: true });
   }
-}));
+  console.log('Uploads directory:', uploadsPath);
 
-// Database Connection with connection pooling
+  // Create hero image directory
+  const heroUploadsPath = path.join(uploadsPath, 'hero');
+  if (!fs.existsSync(heroUploadsPath)) {
+    fs.mkdirSync(heroUploadsPath, { recursive: true });
+  }
+  console.log('Hero images directory:', heroUploadsPath);
+
+  // Serve uploads statically
+  app.use('/uploads', express.static(uploadsPath, {
+    maxAge: '1d',
+    etag: true
+  }));
+} catch (error) {
+  console.error('Error setting up uploads directory:', error);
+}
+
+// Database Connection - Simplified
 const connectDB = async () => {
   try {
     console.log('🔗 Connecting to MongoDB...');
+    if (!process.env.MONGO_URI) {
+      throw new Error('MONGO_URI environment variable is not set');
+    }
+    
     await mongoose.connect(process.env.MONGO_URI, {
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      maxPoolSize: 5,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     });
     console.log('✅ MongoDB connected successfully');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  }
-};
-
-// Routes with error handling
-try {
-  app.use('/api/auth', authRoutes);
-  console.log('✅ authRoutes loaded');
-
-  app.use('/api/mass-schedule', massScheduleRoutes);
-  console.log('✅ massScheduleRoutes loaded');
-
-  app.use('/api/about-section', aboutSectionRoutes);
-  console.log('✅ aboutSectionRoutes loaded');
-
-  app.use('/api/events', eventsRoutes);
-  console.log('✅ eventsRoutes loaded');
-
-  app.use('/api/gallery', galleryRouter);
-  console.log('✅ galleryRouter loaded');
-
-  app.use('/api/prayer-requests', prayerRequestRoutes);
-  console.log('✅ prayerRequestRoutes loaded');
-
-  app.use('/api/donation-sections', donationSectionRoutes);
-  console.log('✅ donationSectionRoutes loaded');
-
-  app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
-  console.log('✅ liturgicalCalendarRoutes loaded');
-
-  app.use('/api/hero-slides', heroSlideRoutes);
-  console.log('✅ heroSlideRoutes loaded');
-
-  app.use('/api/contact', contactRoutes);
-  console.log('✅ contactRoutes loaded');
-
-  app.use('/api/footer', footerRoutes);
-  console.log('✅ footerRoutes loaded');
-
-  app.use('/api/donations-sections', donationROutes);
-  console.log('✅ donationROutes loaded');
-
-  app.use('/api/parish-societies', parishSocietyRoutes);
-  console.log('✅ parishSocietyRoutes loaded');
-} catch (err) {
-  console.error('❌ Error loading route:', err);
-}
-
-// Cleanup old mass schedules
-const scheduleCleanup = async () => {
-  try {
-    const schedules = await mongoose.model('MassSchedule').find().sort({ createdAt: -1 });
-    if (schedules.length > 5) {
-      const idsToDelete = schedules.slice(5).map((s) => s._id);
-      await mongoose.model('MassSchedule').deleteMany({
-        _id: { $in: idsToDelete },
-      });
-      console.log(`🧹 Cleaned up ${idsToDelete.length} old mass schedules`);
+    // Don't exit in production, let Railway restart
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
     }
-  } catch (error) {
-    console.error('❌ Schedule cleanup error:', error);
   }
 };
 
-// Enhanced health check route with detailed info
+// Enhanced health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok',
@@ -281,18 +161,8 @@ app.get('/api/health', (req, res) => {
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    railwayDomain: process.env.RAILWAY_PUBLIC_DOMAIN || 'not set',
-    cors: {
-      requestOrigin: req.headers.origin,
-      host: req.headers.host,
-      userAgent: req.headers['user-agent'],
-      allowedOrigins: [
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'https://distinct-stranger-production.up.railway.app',
-        'https://stfrancis-1.onrender.com',
-      ]
-    }
+    memory: process.memoryUsage(),
+    version: process.version
   });
 });
 
@@ -303,25 +173,54 @@ app.get('/api/test-cors', (req, res) => {
     origin: req.headers.origin,
     timestamp: new Date().toISOString(),
     method: req.method,
-    path: req.path,
-    headers: {
-      origin: req.headers.origin,
-      host: req.headers.host,
-      userAgent: req.headers['user-agent'],
-      referer: req.headers.referer
-    }
+    path: req.path
   });
 });
 
-// Test route
-app.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Server is working! 🚀',
-    timestamp: new Date().toISOString(),
-    origin: req.headers.origin,
-    environment: process.env.NODE_ENV
-  });
-});
+// Routes - with try-catch for safety
+const setupRoutes = () => {
+  try {
+    app.use('/api/auth', authRoutes);
+    app.use('/api/mass-schedule', massScheduleRoutes);
+    app.use('/api/about-section', aboutSectionRoutes);
+    app.use('/api/events', eventsRoutes);
+    app.use('/api/gallery', galleryRouter);
+    app.use('/api/prayer-requests', prayerRequestRoutes);
+    app.use('/api/donation-sections', donationSectionRoutes);
+    app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
+    app.use('/api/hero-slides', heroSlideRoutes);
+    app.use('/api/contact', contactRoutes);
+    app.use('/api/footer', footerRoutes);
+    app.use('/api/donations-sections', donationROutes);
+    app.use('/api/parish-societies', parishSocietyRoutes);
+    console.log('✅ All routes loaded successfully');
+  } catch (err) {
+    console.error('❌ Error loading routes:', err);
+  }
+};
+
+// Setup routes
+setupRoutes();
+
+// Cleanup function - simplified
+const scheduleCleanup = async () => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⚠️ Database not connected, skipping cleanup');
+      return;
+    }
+    
+    const MassSchedule = mongoose.model('MassSchedule');
+    const schedules = await MassSchedule.find().sort({ createdAt: -1 });
+    if (schedules.length > 5) {
+      const idsToDelete = schedules.slice(5).map((s) => s._id);
+      await MassSchedule.deleteMany({ _id: { $in: idsToDelete } });
+      console.log(`🧹 Cleaned up ${idsToDelete.length} old mass schedules`);
+    }
+  } catch (error) {
+    console.error('❌ Schedule cleanup error:', error);
+  }
+};
 
 // 404 handler
 app.use((req, res, next) => {
@@ -334,63 +233,51 @@ app.use((req, res, next) => {
   });
 });
 
-// Error handling middleware - Enhanced for CORS debugging
+// Simplified error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Error occurred:');
-  console.error('Error stack:', err.stack);
-  console.error('Error message:', err.message);
-  console.error('Request path:', req.path);
-  console.error('Request method:', req.method);
-  console.error('Request origin:', req.headers.origin);
+  console.error('❌ Error occurred:', err.message);
+  console.error('Request:', req.method, req.path);
+  console.error('Origin:', req.headers.origin);
   
-  // Check if it's a CORS error
-  if (err.message.includes('CORS')) {
-    return res.status(403).json({
-      message: 'CORS policy violation',
-      error: err.message,
-      origin: req.headers.origin,
-      allowedOrigins: [
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'https://distinct-stranger-production.up.railway.app',
-        'https://stfrancis-1.onrender.com',
-      ]
-    });
-  }
+  const statusCode = err.status || 500;
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : err.message;
   
-  res.status(err.status || 500).json({
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+  res.status(statusCode).json({
+    error: message,
     path: req.path,
     method: req.method,
     timestamp: new Date().toISOString()
   });
 });
 
-// Graceful shutdown handling
-process.on('SIGTERM', async () => {
-  console.log('📥 SIGTERM received, shutting down gracefully');
-  await mongoose.connection.close();
-  console.log('✅ MongoDB connection closed');
+// Graceful shutdown
+const gracefulShutdown = async () => {
+  console.log('📥 Graceful shutdown initiated');
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close();
+      console.log('✅ MongoDB connection closed');
+    }
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+  }
   process.exit(0);
-});
+};
 
-process.on('SIGINT', async () => {
-  console.log('📥 SIGINT received, shutting down gracefully');
-  await mongoose.connection.close();
-  console.log('✅ MongoDB connection closed');
-  process.exit(0);
-});
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
-// Handle uncaught exceptions
+// Error handling
 process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
-  process.exit(1);
+  gracefulShutdown();
 });
 
 process.on('unhandledRejection', (err) => {
   console.error('❌ Unhandled Rejection:', err);
-  process.exit(1);
+  gracefulShutdown();
 });
 
 // Start server
@@ -398,36 +285,36 @@ const startServer = async () => {
   try {
     console.log('🔄 Initializing server...');
     
-    // Connect to database first
+    // Connect to database
     await connectDB();
 
-    // Initial cleanup
-    await scheduleCleanup();
-
-    // Schedule daily cleanup
-    setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
+    // Initial cleanup (only if DB is connected)
+    if (mongoose.connection.readyState === 1) {
+      await scheduleCleanup();
+      // Schedule daily cleanup
+      setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
+    }
 
     // Start listening
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('🚀 ===================================');
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 MongoDB: ${process.env.MONGO_URI ? 'Connected' : 'Not configured'}`);
+      console.log(`🔗 MongoDB: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
       console.log(`🌐 Railway Domain: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'Not set'}`);
-      console.log('🔒 CORS enabled for origins:');
-      console.log('   - http://localhost:5173');
-      console.log('   - http://127.0.0.1:5173'); 
-      console.log('   - https://distinct-stranger-production.up.railway.app');
-      console.log('   - https://stfrancis-1.onrender.com');
-      console.log('   - Any *.up.railway.app domain');
       console.log('🚀 ===================================');
-      
-      // Test endpoints available
-      console.log('📋 Test endpoints:');
-      console.log(`   Health: https://distinct-stranger-production.up.railway.app/api/health`);
-      console.log(`   CORS Test: https://distinct-stranger-production.up.railway.app/api/test-cors`);
-      console.log(`   Hero Slides: https://distinct-stranger-production.up.railway.app/api/hero-slides`);
     });
+
+    // Handle server errors
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+      } else {
+        console.error('❌ Server error:', err);
+      }
+      process.exit(1);
+    });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
