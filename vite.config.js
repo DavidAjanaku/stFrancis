@@ -9,6 +9,11 @@ export default defineConfig({
   preview: {
     port: 4173,
     strictPort: true,
+    allowedHosts: [
+      'stfrancis-52b1.onrender.com',
+      'stfrancis-1.onrender.com',
+      'distinct-stranger-production.up.railway.app'
+    ]
   },
   server: {
     port: 5173,
