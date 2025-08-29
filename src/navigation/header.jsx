@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, X, Phone, MessageCircle, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import logo from "../../data/francis.png"
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -65,7 +66,7 @@ const Header = () => {
           <Link to="/" className="flex items-center space-x-4" onClick={handleLinkClick}>
             <div className="w-24 h-24 md:w-24 md:h-24 rounded-full overflow-hidden flex items-center justify-center">
               <img 
-                src="../data/francis.png" 
+                src={logo}
                 alt="St. Francis Catholic Church Logo" 
                 className="w-full h-full object-cover"
               />
