@@ -315,7 +315,7 @@ const HeroBanner = () => {
                         isActive ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
                       }`}
                     >
-                      <button
+                      {/* <button
                         onClick={() => handleClick(slide.cta.primary.link)}
                         className="bg-amber-800 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-amber-900 transition-colors inline-flex items-center justify-center shadow-lg transform hover:scale-105"
                       >
@@ -326,7 +326,7 @@ const HeroBanner = () => {
                         className="border-2 border-amber-200 text-amber-100 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-amber-200 hover:text-amber-900 transition-colors inline-flex items-center justify-center transform hover:scale-105"
                       >
                         {slide.cta.secondary.text}
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

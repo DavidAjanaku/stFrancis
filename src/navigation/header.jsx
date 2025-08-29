@@ -23,9 +23,9 @@ const Header = () => {
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
       {/* Top Contact Bar */}
-      <div className="bg-amber-900 text-white py-2">
+      {/* <div className="bg-amber-900 text-white py-2">
         <div className="container mx-auto px-4">
-          {/* Desktop Layout */}
+         
           <div className="hidden md:flex justify-between items-center text-sm">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
@@ -42,12 +42,12 @@ const Header = () => {
             </div>
           </div>
           
-          {/* Mobile Layout */}
+        
           <div className="md:hidden">
             <div className="flex flex-col space-y-1 text-xs">
               <div className="flex items-center justify-center space-x-1">
                 <Phone size={12} />
-                <span>+234 123 456 7890</span>
+                <span>+234 706 345 5354</span>
               </div>
               <div className="flex items-center justify-center space-x-1">
                 <MessageCircle size={12} />
@@ -56,19 +56,23 @@ const Header = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Header */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3" onClick={handleLinkClick}>
-            <div className="w-12 h-12 bg-amber-800 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">✚</span>
+          {/* Logo - Made Larger */}
+          <Link to="/" className="flex items-center space-x-4" onClick={handleLinkClick}>
+            <div className="w-24 h-24 md:w-24 md:h-24 rounded-full overflow-hidden flex items-center justify-center">
+              <img 
+                src="./data/francis.png" 
+                alt="St. Francis Catholic Church Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-amber-800">St. Francis Catholic Church</h1>
-              <p className="text-sm text-gray-600">Oregun, Lagos</p>
+              <h1 className="text-xl md:text-2xl font-bold text-amber-800">St. Francis Catholic Church</h1>
+              {/* <p className="text-sm md:text-base text-gray-600">Oregun, Lagos</p> */}
             </div>
           </Link>
 

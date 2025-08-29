@@ -156,12 +156,12 @@ const Footer = () => {
                 <Phone size={16} className="text-amber-300" />
                 <span className="text-amber-200">{footerData.contactInfo.phone}</span>
               </div>
-              {footerData.contactInfo.whatsapp && (
+              {/* {footerData.contactInfo.whatsapp && (
                 <div className="flex items-center space-x-2">
                   <MessageCircle size={16} className="text-amber-300" />
                   <span className="text-amber-200">WhatsApp Available</span>
                 </div>
-              )}
+              )} */}
               <div className="flex items-center space-x-2">
                 <Mail size={16} className="text-amber-300" />
                 <span className="text-amber-200">{footerData.contactInfo.email}</span>
@@ -171,10 +171,19 @@ const Footer = () => {
             {/* Office Hours */}
             <div className="mt-4 p-3 bg-amber-800 rounded-lg">
               <h5 className="font-medium mb-2">Office Hours</h5>
-              <div className="text-xs text-amber-200 space-y-1">
-                <p>Monday - Friday: {footerData.officeHours.weekdays}</p>
-                <p>Saturday: {footerData.officeHours.saturday}</p>
-                <p>Sunday: {footerData.officeHours.sunday}</p>
+              <div className="text-xs text-amber-200 space-y-2">
+                <div>
+                  <p className="font-medium text-amber-100">Parish Office:</p>
+                  <p>Monday to Friday: 9am to 4pm</p>
+                </div>
+                <div>
+                  <p className="font-medium text-amber-100">Parish Priest Office Hours:</p>
+                  <p>Tuesday and Friday: 9am to 1:30pm</p>
+                </div>
+                <div>
+                  <p className="font-medium text-amber-100">Associate Priest Office Hours:</p>
+                  <p>Monday and Wednesday: 9am to 1:30pm</p>
+                </div>
               </div>
             </div>
           </div>
