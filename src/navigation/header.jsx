@@ -65,7 +65,7 @@ const Header = () => {
           <Link to="/" className="flex items-center space-x-4" onClick={handleLinkClick}>
             <div className="w-24 h-24 md:w-24 md:h-24 rounded-full overflow-hidden flex items-center justify-center">
               <img 
-                src="./data/francis.png" 
+                src="../data/francis.png" 
                 alt="St. Francis Catholic Church Logo" 
                 className="w-full h-full object-cover"
               />
