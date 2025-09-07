@@ -306,7 +306,7 @@ const MassScheduleComponent = () => {
         </div>
 
         {/* Confession Schedule */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-green-200">
+     <div className="bg-white rounded-xl shadow-lg p-6 border border-green-200">
           <div className="flex items-center mb-4">
             <Calendar className="w-6 h-6 text-green-900 mr-3" />
             <h3 className="text-xl font-bold text-green-900">Confession</h3>
@@ -315,8 +315,11 @@ const MassScheduleComponent = () => {
             <div className="space-y-3">
               {confessionSchedule.map((confession, index) => (
                 <div key={index} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <h4 className="font-semibold text-green-900 text-sm">{confession.time}</h4>
-                  <p className="text-green-700 text-xs mt-1">{confession.details}</p>
+                  <h4 className="font-semibold text-green-900 text-sm">{confession.day}</h4>
+                  <p className="text-green-700 text-xs mt-1">{confession.time}</p>
+                  {confession.details && (
+                    <p className="text-green-600 text-xs mt-1">{confession.details}</p>
+                  )}
                 </div>
               ))}
             </div>
