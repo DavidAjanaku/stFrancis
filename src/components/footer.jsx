@@ -125,7 +125,7 @@ const Footer = () => {
           </div>
 
           {/* Mass Times */}
-          <div>
+          {/* <div>
             <h4 className="text-lg font-semibold mb-4">Mass Times</h4>
             <div className="space-y-2 text-sm text-amber-200">
               {footerData.massTimes.map((mass, index) => (
@@ -138,7 +138,7 @@ const Footer = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Contact Info */}
           <div>
@@ -197,7 +197,7 @@ const Footer = () => {
             <p>
               &copy; {new Date().getFullYear()} {footerData.churchInfo.name || 'Church Name'}. All rights reserved.
             </p>
-            <div className="flex space-x-6 mt-2 md:mt-0">
+            {/* <div className="flex space-x-6 mt-2 md:mt-0">
               <button 
                 onClick={() => handleClick('/privacy')} 
                 className="hover:text-white transition-colors"
@@ -210,17 +210,9 @@ const Footer = () => {
               >
                 Terms of Service
               </button>
-              {/* Admin Link */}
-              <button 
-                onClick={() => handleClick('/admin')} 
-                className="hover:text-white transition-colors flex items-center space-x-1"
-                title="Admin Panel"
-              >
-                <Settings size={14} />
-                <span>Admin</span>
-              </button>
+             
               <span>Built with ❤️ for our Parish</span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
