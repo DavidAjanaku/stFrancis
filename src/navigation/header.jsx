@@ -156,7 +156,7 @@ const Header = () => {
                 </button>
                 {aboutDropdownOpen && (
                   <div className="pl-4 mt-2 space-y-2">
-                    <Link to="/about/parish-history" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Parish History</Link>
+                    <Link to="/about" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Parish History</Link>
                     {/* <Link to="/contact" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Contact Us</Link> */}
                     <Link to="/gallery" onClick={handleLinkClick} className="block text-sm text-gray-600 hover:text-amber-800">Gallery</Link>
                   </div>
