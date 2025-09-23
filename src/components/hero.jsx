@@ -67,8 +67,8 @@ const HeroBanner = () => {
       try {
         setLoading(true);
         
-        console.log(`Attempting to fetch slides (attempt ${retryCount + 1}/${maxRetries + 1})`);
-        console.log(`Backend URL: ${backendUrl}`);
+        // console.log(`Attempting to fetch slides (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        // console.log(`Backend URL: ${backendUrl}`);
         
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
@@ -85,15 +85,15 @@ const HeroBanner = () => {
         
         clearTimeout(timeoutId);
         
-        console.log(`Response status: ${response.status}`);
-        console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+        // console.log(`Response status: ${response.status}`);
+        // console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('Fetched slides:', data);
+        // console.log('Fetched slides:', data);
         
         if (data && data.length > 0) {
           setSlides(data);
@@ -107,7 +107,7 @@ const HeroBanner = () => {
         console.error(`Error fetching hero slides (attempt ${retryCount + 1}):`, error);
         
         if (retryCount < maxRetries) {
-          console.log(`Retrying in ${retryDelay}ms...`);
+          // console.log(`Retrying in ${retryDelay}ms...`);
           setTimeout(() => fetchSlides(retryCount + 1), retryDelay);
           return; // Don't set loading to false yet
         } else {
@@ -176,12 +176,12 @@ const HeroBanner = () => {
       }
     ];
     
-    console.log('Loading fallback content');
+    // console.log('Loading fallback content');
     setSlides(fallbackSlides);
   }, []);
 
   const handleClick = useCallback((link) => {
-    console.log(`Navigation to: ${link}`);
+    // console.log(`Navigation to: ${link}`);
   }, []);
   const slideUrls = useMemo(() => {
     return slides.map(slide => ({

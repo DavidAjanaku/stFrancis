@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 
 const DonationBlog = () => {
   const [donationData, setDonationData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const openModal = (post) => {
     setSelectedPost(post);
@@ -35,6 +37,7 @@ const DonationBlog = () => {
         );
         
         setDonationData(sortedData);
+        setFilteredData(sortedData); // Initialize filtered data with all posts
       } catch (error) {
         console.error('Error fetching donation data:', error);
         setError('Failed to load donation data');
@@ -46,11 +49,27 @@ const DonationBlog = () => {
     fetchDonationData();
   }, []);
 
+  // Handle search input change
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+
+    if (query === '') {
+      setFilteredData(donationData); // Reset to all posts if query is empty
+    } else {
+      const filtered = donationData.filter(post => 
+        post.header.toLowerCase().includes(query) || 
+        post.paragraph.toLowerCase().includes(query)
+      );
+      setFilteredData(filtered);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12  mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading blog posts...</p>
         </div>
       </div>
@@ -73,11 +92,13 @@ const DonationBlog = () => {
     );
   }
 
-  if (!donationData || donationData.length === 0) {
+  if (!filteredData || filteredData.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 text-lg">No blog posts available yet.</p>
+          <p className="text-gray-600 text-lg">
+            {searchQuery ? 'No blog posts match your search.' : 'No blog posts available yet.'}
+          </p>
           <p className="text-gray-500 mt-2">Check back later for updates.</p>
         </div>
       </div>
@@ -87,15 +108,25 @@ const DonationBlog = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white ">
+      <header className="bg-white">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Our Blog
             </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
               Stories and updates from our community impact initiatives
             </p>
+            {/* Search Bar */}
+            <div className="max-w-xl mx-auto">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearch}
+                placeholder="Search blog posts..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -103,7 +134,7 @@ const DonationBlog = () => {
       {/* Blog Grid */}
       <main className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {donationData.map((post, index) => {
+          {filteredData.map((post, index) => {
             const activeImage = post.images.find(img => img.isActive) || post.images[0];
             
             return (
@@ -168,8 +199,6 @@ const DonationBlog = () => {
             );
           })}
         </div>
-
-       
       </main>
 
       {/* Modal */}

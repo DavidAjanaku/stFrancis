@@ -23,12 +23,14 @@ const DonationPage = () => {
         const categoriesResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/categories');
         if (!categoriesResponse.ok) throw new Error('Failed to fetch donation categories');
         const categoriesData = await categoriesResponse.json();
+        console.log(categoriesData);
+        
         setDonationCategories(categoriesData);
 
         // Fetch hero content
         const heroResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/hero');
         if (!heroResponse.ok) throw new Error('Failed to fetch hero content');
-        const heroData = await heroResponse.json();
+        const heroData = await response.json();
         setHeroContent(heroData);
       } catch (err) {
         setError('Failed to load donation data. Please try again later.');
@@ -149,11 +151,32 @@ const DonationPage = () => {
               >
                 {/* Image */}
                 <div className="relative h-64 overflow-hidden">
-                 <img
-  src={`'https://distinct-stranger-production.up.railway.app${category.image}`}
-  alt={category.title}
-  className="w-full h-full object-cover transform transition-transform duration-300 hover:scale-110"
-/>
+                  {category.image ? (
+                    <img
+                      src={`https://distinct-stranger-production.up.railway.app${category.image}`}
+                      alt={category.title}
+                      className="w-full h-full object-cover transform transition-transform duration-300 hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                      <div className="text-center">
+                        <svg
+                          className="w-12 h-12 text-gray-400 mx-auto mb-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <span className="text-gray-400 text-sm">No image available</span>
+                      </div>
+                    </div>
+                  )}
                   <div
                     className={`absolute inset-0 bg-gradient-to-t ${
                       category.theme === 'brown'

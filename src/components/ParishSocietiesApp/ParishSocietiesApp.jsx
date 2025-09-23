@@ -183,9 +183,12 @@ const ParishSocietiesPage = () => {
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to Join a Parish Society?</h2>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
               Each of our societies welcomes new members with open arms. Contact any of the coordinators listed above or
-              speak with our parish priest after Mass to learn more about getting involved.
+              visit our Linktree to reach the parish office.
             </p>
-            <button className="bg-amber-700 text-white px-8 py-3 rounded-lg hover:bg-amber-800 transition-colors font-medium">
+            <button
+              onClick={() => window.open('https://linktr.ee/StFrancisOregun?utm_source=linktree_profile_share&ltsid=ee016b89-af0d-4f15-a8f9-6e1cca54e9b5', '_blank')}
+              className="bg-amber-700 text-white px-8 py-3 rounded-lg hover:bg-amber-800 transition-colors font-medium"
+            >
               Contact Parish Office
             </button>
           </div>
@@ -592,10 +595,8 @@ const ParishSocietiesPage = () => {
 
   return (
     <div>
-    
-
       {/* Render appropriate view */}
-      { <PublicView />}
+      {isAdminMode ? <AdminView /> : <PublicView />}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Youtube, Settings } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Youtube, Link, Settings } from 'lucide-react';
 
 const Footer = () => {
   const [footerData, setFooterData] = useState(null);
@@ -29,8 +29,8 @@ const Footer = () => {
     if (link === '/admin') {
       window.location.href = '/admin';
     } else {
-      // In a real app, this would use your routing solution
-      console.log(`Navigation to: ${link}`);
+      // Open external links in a new tab
+      window.open(link, '_blank');
     }
   };
 
@@ -104,6 +104,12 @@ const Footer = () => {
                   <Youtube size={16} />
                 </button>
               )}
+              <button 
+                onClick={() => handleClick('https://linktr.ee/StFrancisOregun?utm_source=linktree_profile_share&ltsid=ee016b89-af0d-4f15-a8f9-6e1cca54e9b5')} 
+                className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center hover:bg-amber-700 transition-colors"
+              >
+                <Link size={16} />
+              </button>
             </div>
           </div>
 
@@ -124,22 +130,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Mass Times */}
-          {/* <div>
-            <h4 className="text-lg font-semibold mb-4">Mass Times</h4>
-            <div className="space-y-2 text-sm text-amber-200">
-              {footerData.massTimes.map((mass, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Clock size={14} />
-                  <div>
-                    <p className="font-medium text-white">{mass.day}</p>
-                    <p>{mass.times}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div> */}
-
           {/* Contact Info */}
           <div>
             <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
@@ -156,12 +146,6 @@ const Footer = () => {
                 <Phone size={16} className="text-amber-300" />
                 <span className="text-amber-200">{footerData.contactInfo.phone}</span>
               </div>
-              {/* {footerData.contactInfo.whatsapp && (
-                <div className="flex items-center space-x-2">
-                  <MessageCircle size={16} className="text-amber-300" />
-                  <span className="text-amber-200">WhatsApp Available</span>
-                </div>
-              )} */}
               <div className="flex items-center space-x-2">
                 <Mail size={16} className="text-amber-300" />
                 <span className="text-amber-200">{footerData.contactInfo.email}</span>
@@ -197,22 +181,6 @@ const Footer = () => {
             <p>
               &copy; {new Date().getFullYear()} {footerData.churchInfo.name || 'Church Name'}. All rights reserved.
             </p>
-            {/* <div className="flex space-x-6 mt-2 md:mt-0">
-              <button 
-                onClick={() => handleClick('/privacy')} 
-                className="hover:text-white transition-colors"
-              >
-                Privacy Policy
-              </button>
-              <button 
-                onClick={() => handleClick('/terms')} 
-                className="hover:text-white transition-colors"
-              >
-                Terms of Service
-              </button>
-             
-              <span>Built with ❤️ for our Parish</span>
-            </div> */}
           </div>
         </div>
       </div>
