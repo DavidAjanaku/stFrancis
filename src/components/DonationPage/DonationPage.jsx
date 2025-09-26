@@ -14,23 +14,27 @@ const DonationPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copiedAccount, setCopiedAccount] = useState(null);
+
+  // Base URL for your API
+  const API_BASE_URL = 'https://distinct-stranger-production.up.railway.app';
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         // Fetch donation categories
-        const categoriesResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/categories');
+        const categoriesResponse = await fetch(`${API_BASE_URL}/api/donations-sections/categories`);
         if (!categoriesResponse.ok) throw new Error('Failed to fetch donation categories');
         const categoriesData = await categoriesResponse.json();
-        console.log(categoriesData);
+        console.log('Categories data:', categoriesData);
         
         setDonationCategories(categoriesData);
 
         // Fetch hero content
-        const heroResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/hero');
+        const heroResponse = await fetch(`${API_BASE_URL}/api/donations-sections/hero`);
         if (!heroResponse.ok) throw new Error('Failed to fetch hero content');
-        const heroData = await response.json();
+        const heroData = await heroResponse.json();
         setHeroContent(heroData);
       } catch (err) {
         setError('Failed to load donation data. Please try again later.');
@@ -43,9 +47,26 @@ const DonationPage = () => {
     fetchData();
   }, []);
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // Add toast notification here if desired
+  // Helper function to construct full image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    // If the path already includes the domain, return as is
+    if (imagePath.startsWith('http')) return imagePath;
+    // If it starts with /uploads, prepend the API base URL
+    if (imagePath.startsWith('/uploads')) return `${API_BASE_URL}${imagePath}`;
+    // Otherwise, assume it's a relative path and construct full URL
+    return `${API_BASE_URL}/uploads/${imagePath}`;
+  };
+
+  const copyToClipboard = async (text, accountId) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAccount(accountId);
+      // Reset the copied state after 2 seconds
+      setTimeout(() => setCopiedAccount(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
   if (loading) {
@@ -135,30 +156,43 @@ const DonationPage = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {donationCategories.map((category) => (
-              <div
-                key={category._id}
-                className={`relative rounded-2xl overflow-hidden shadow-xl transform transition-all duration-300 hover:scale-105 ${
-                  category.theme === 'brown'
-                    ? 'bg-gradient-to-br from-amber-100 to-yellow-50 border-2 border-amber-200'
-                    : category.theme === 'harvest'
-                    ? 'bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200'
-                    : 'bg-gradient-to-br from-blue-50 to-gray-50 border-2 border-blue-200'
-                } ${hoveredCard === category._id ? 'shadow-2xl' : ''}`}
-                onMouseEnter={() => setHoveredCard(category._id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {/* Image */}
-                <div className="relative h-64 overflow-hidden">
-                  {category.image ? (
-                    <img
-                      src={`https://distinct-stranger-production.up.railway.app${category.image}`}
-                      alt={category.title}
-                      className="w-full h-full object-cover transform transition-transform duration-300 hover:scale-110"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {donationCategories.map((category) => {
+              const imageUrl = getImageUrl(category.image);
+              console.log('Image URL for category:', category.title, imageUrl);
+              
+              return (
+                <div
+                  key={category._id}
+                  className={`relative rounded-2xl overflow-hidden shadow-xl transform transition-all duration-300 hover:scale-105 ${
+                    category.theme === 'brown'
+                      ? 'bg-gradient-to-br from-amber-100 to-yellow-50 border-2 border-amber-200'
+                      : category.theme === 'harvest'
+                      ? 'bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200'
+                      : 'bg-gradient-to-br from-blue-50 to-gray-50 border-2 border-blue-200'
+                  } ${hoveredCard === category._id ? 'shadow-2xl' : ''}`}
+                  onMouseEnter={() => setHoveredCard(category._id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  {/* Image */}
+                  <div className="relative h-64 overflow-hidden">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={category.title}
+                        className="w-full h-full object-cover transform transition-transform duration-300 hover:scale-110"
+                        onLoad={() => console.log('Image loaded successfully:', imageUrl)}
+                        onError={(e) => {
+                          console.error('Failed to load image:', imageUrl);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300"
+                      style={{ display: imageUrl ? 'none' : 'flex' }}
+                    >
                       <div className="text-center">
                         <svg
                           className="w-12 h-12 text-gray-400 mx-auto mb-2"
@@ -176,96 +210,106 @@ const DonationPage = () => {
                         <span className="text-gray-400 text-sm">No image available</span>
                       </div>
                     </div>
-                  )}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-t ${
-                      category.theme === 'brown'
-                        ? 'from-amber-900/60 to-transparent'
-                        : category.theme === 'harvest'
-                        ? 'from-orange-900/60 to-transparent'
-                        : 'from-blue-900/60 to-transparent'
-                    }`}
-                  ></div>
-                </div>
-
-                {/* Content */}
-                <div className="p-8">
-                  <h3
-                    className={`text-2xl font-bold mb-6 text-center ${
-                      category.theme === 'brown'
-                        ? 'text-amber-800'
-                        : category.theme === 'harvest'
-                        ? 'text-orange-700'
-                        : 'text-blue-700'
-                    }`}
-                  >
-                    {category.title}
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <p className="text-gray-600 font-medium mb-2">Account Details</p>
-                      <p className="text-gray-800 font-semibold text-lg">{category.accountName}</p>
-                    </div>
-
                     <div
-                      className={`rounded-lg p-4 space-y-3 ${
+                      className={`absolute inset-0 bg-gradient-to-t ${
                         category.theme === 'brown'
-                          ? 'bg-amber-50 border border-amber-200'
+                          ? 'from-amber-900/60 to-transparent'
                           : category.theme === 'harvest'
-                          ? 'bg-orange-50 border border-orange-200'
-                          : 'bg-blue-50 border border-blue-200'
+                          ? 'from-orange-900/60 to-transparent'
+                          : 'from-blue-900/60 to-transparent'
+                      }`}
+                    ></div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-8">
+                    <h3
+                      className={`text-2xl font-bold mb-6 text-center ${
+                        category.theme === 'brown'
+                          ? 'text-amber-800'
+                          : category.theme === 'harvest'
+                          ? 'text-orange-700'
+                          : 'text-blue-700'
                       }`}
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Bank:</span>
-                        <span className="font-semibold text-gray-800">{category.bankName}</span>
+                      {category.title}
+                    </h3>
+
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <p className="text-gray-600 font-medium mb-2">Account Details</p>
+                        <p className="text-gray-800 font-semibold text-lg">{category.accountName}</p>
                       </div>
 
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Account Number:</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono font-semibold text-gray-800">{category.accountNumber}</span>
-                          <button
-                            onClick={() => copyToClipboard(category.accountNumber)}
-                            className={`p-1 text-gray-500 transition-colors ${
-                              category.theme === 'brown'
-                                ? 'hover:text-amber-700'
-                                : category.theme === 'harvest'
-                                ? 'hover:text-orange-700'
-                                : 'hover:text-blue-700'
-                            }`}
-                            title="Copy to clipboard"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                              />
-                            </svg>
-                          </button>
+                      <div
+                        className={`rounded-lg p-4 space-y-3 ${
+                          category.theme === 'brown'
+                            ? 'bg-amber-50 border border-amber-200'
+                            : category.theme === 'harvest'
+                            ? 'bg-orange-50 border border-orange-200'
+                            : 'bg-blue-50 border border-blue-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Bank:</span>
+                          <span className="font-semibold text-gray-800">{category.bankName}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Account Number:</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono font-semibold text-gray-800">{category.accountNumber}</span>
+                            <button
+                              onClick={() => copyToClipboard(category.accountNumber, category._id)}
+                              className={`p-1 transition-colors ${
+                                copiedAccount === category._id 
+                                  ? 'text-green-600' 
+                                  : category.theme === 'brown'
+                                  ? 'text-gray-500 hover:text-amber-700'
+                                  : category.theme === 'harvest'
+                                  ? 'text-gray-500 hover:text-orange-700'
+                                  : 'text-gray-500 hover:text-blue-700'
+                              }`}
+                              title={copiedAccount === category._id ? 'Copied!' : 'Copy to clipboard'}
+                            >
+                              {copiedAccount === category._id ? (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <button
-                      onClick={() => copyToClipboard(category.accountNumber)}
-                      className={`w-full font-semibold py-3 px-6 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg ${
-                        category.theme === 'brown'
-                          ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
-                          : category.theme === 'harvest'
-                          ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
-                          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
-                      }`}
-                    >
-                      Copy Account Details
-                    </button>
+                      <button
+                        onClick={() => copyToClipboard(category.accountNumber, category._id)}
+                        className={`w-full font-semibold py-3 px-6 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg ${
+                          copiedAccount === category._id 
+                            ? 'bg-green-600 text-white'
+                            : category.theme === 'brown'
+                            ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
+                            : category.theme === 'harvest'
+                            ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
+                            : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+                        }`}
+                      >
+                        {copiedAccount === category._id ? 'Account Details Copied!' : 'Copy Account Details'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
