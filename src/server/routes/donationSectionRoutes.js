@@ -9,16 +9,28 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsDir = path.resolve(process.cwd(), 'src/data/uploads');
 
-// Ensure uploads directory exists
+// Use the same upload directory as defined in server.js
+const uploadsDir = path.resolve(process.cwd(), 'uploads'); // Changed from 'src/data/uploads'
+const altUploadsDir = path.resolve(process.cwd(), 'src/data/uploads'); // Keep as fallback
+
+// Ensure uploads directory exists (both paths for compatibility)
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('Created uploads directory:', uploadsDir);
+}
+
+if (!fs.existsSync(altUploadsDir)) {
+  fs.mkdirSync(altUploadsDir, { recursive: true });
+  console.log('Created alternative uploads directory:', altUploadsDir);
 }
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
+  destination: (req, file, cb) => {
+    // Use the main uploads directory
+    cb(null, uploadsDir);
+  },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
@@ -76,6 +88,15 @@ router.post('/upload', authMiddleware, upload.single('image'), (req, res) => {
     url: imageUrl,
   });
 
+  // Also copy file to alternative location for compatibility
+  try {
+    const altFilePath = path.join(altUploadsDir, req.file.filename);
+    fs.copyFileSync(req.file.path, altFilePath);
+    console.log('File also copied to alternative location:', altFilePath);
+  } catch (error) {
+    console.warn('Warning: Could not copy file to alternative location:', error.message);
+  }
+
   res.json({
     url: imageUrl,
     filename: req.file.filename,
@@ -93,6 +114,15 @@ router.post('/categories', authMiddleware, upload.single('image'), async (req, r
 
     const imageUrl = `/uploads/${req.file.filename}`;
 
+    // Also copy file to alternative location for compatibility
+    try {
+      const altFilePath = path.join(altUploadsDir, req.file.filename);
+      fs.copyFileSync(req.file.path, altFilePath);
+      console.log('File also copied to alternative location:', altFilePath);
+    } catch (error) {
+      console.warn('Warning: Could not copy file to alternative location:', error.message);
+    }
+
     const newCategory = new DonationCategory({
       title,
       image: imageUrl,
@@ -108,9 +138,17 @@ router.post('/categories', authMiddleware, upload.single('image'), async (req, r
   } catch (error) {
     console.error('Error creating donation category:', error);
     
-    // Clean up uploaded file if saving failed
+    // Clean up uploaded files if saving failed
     if (req.file) {
-      fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+      try {
+        fs.unlinkSync(req.file.path);
+        const altFilePath = path.join(altUploadsDir, req.file.filename);
+        if (fs.existsSync(altFilePath)) {
+          fs.unlinkSync(altFilePath);
+        }
+      } catch (cleanupError) {
+        console.warn('Warning: Could not clean up files after error:', cleanupError.message);
+      }
     }
     
     res.status(500).json({ 
@@ -146,15 +184,26 @@ router.delete('/categories/:id', authMiddleware, async (req, res) => {
     if (!deletedCategory) {
       return res.status(404).json({ message: 'Donation category not found' });
     }
-    // Delete associated image file
+    
+    // Delete associated image file from both locations
     if (deletedCategory.image && deletedCategory.image.startsWith('/uploads/')) {
       const filename = deletedCategory.image.split('/').pop();
-      const filePath = path.join(uploadsDir, filename);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log('Deleted image file:', filePath);
+      
+      // Delete from main uploads directory
+      const mainFilePath = path.join(uploadsDir, filename);
+      if (fs.existsSync(mainFilePath)) {
+        fs.unlinkSync(mainFilePath);
+        console.log('Deleted image file from main location:', mainFilePath);
+      }
+      
+      // Delete from alternative uploads directory
+      const altFilePath = path.join(altUploadsDir, filename);
+      if (fs.existsSync(altFilePath)) {
+        fs.unlinkSync(altFilePath);
+        console.log('Deleted image file from alternative location:', altFilePath);
       }
     }
+    
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting donation category:', error);
