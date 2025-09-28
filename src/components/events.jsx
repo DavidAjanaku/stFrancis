@@ -34,14 +34,6 @@ const EventsSection = () => {
     });
   };
 
-  const isUpcoming = (dateString) => {
-    const eventDate = new Date(dateString);
-    const today = new Date();
-    return eventDate >= today;
-  };
-
-  const upcomingEvents = events.filter(event => isUpcoming(event.date));
-
   if (loading) {
     return (
       <section className="py-16 px-4 bg-gray-50">
@@ -72,10 +64,10 @@ const EventsSection = () => {
   return (
     <section className="py-16 px-4 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-12 text-red-900">Upcoming Events</h2>
+        <h2 className="text-4xl font-bold text-center mb-12 text-red-900">Church Events</h2>
         <div className="grid md:grid-cols-2 gap-8">
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event, index) => (
+          {events.length > 0 ? (
+            events.map((event, index) => (
               <div key={index} className="bg-white p-6 rounded-lg shadow-lg">
                 <div className="flex items-center mb-4">
                   <Calendar className="h-6 w-6 text-red-900 mr-2" />
@@ -110,7 +102,7 @@ const EventsSection = () => {
           ) : (
             <div className="col-span-2 text-center py-8">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No upcoming events scheduled</p>
+              <p className="text-gray-500">No events scheduled</p>
             </div>
           )}
         </div>
