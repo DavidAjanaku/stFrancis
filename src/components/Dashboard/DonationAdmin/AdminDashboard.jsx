@@ -29,18 +29,34 @@ const CategoriesAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Get the base URL dynamically based on environment
+  const getApiBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      // In browser environment
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5001'; // Local development
+      }
+      // Production - use current domain
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+    // Fallback for SSR or other environments
+    return 'https://distinct-stranger-production.up.railway.app';
+  };
+
+  const API_BASE_URL = getApiBaseUrl();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         // Fetch donation categories
-        const categoriesResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/categories');
+        const categoriesResponse = await fetch(`${API_BASE_URL}/api/donations-sections/categories`);
         if (!categoriesResponse.ok) throw new Error('Failed to fetch donation categories');
         const categoriesData = await categoriesResponse.json();
         setCategories(categoriesData);
 
         // Fetch hero content
-        const heroResponse = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/hero');
+        const heroResponse = await fetch(`${API_BASE_URL}/api/donations-sections/hero`);
         if (!heroResponse.ok) throw new Error('Failed to fetch hero content');
         const heroData = await heroResponse.json();
         setHeroContent(heroData);
@@ -53,7 +69,7 @@ const CategoriesAdmin = () => {
     };
 
     fetchData();
-  }, []);
+  }, [API_BASE_URL]);
 
   const handleEditCategory = (category) => {
     setSelectedCategory(category);
@@ -78,7 +94,7 @@ const CategoriesAdmin = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://distinct-stranger-production.up.railway.app/api/donations-sections/categories/${selectedCategory._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/donations-sections/categories/${selectedCategory._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +121,7 @@ const CategoriesAdmin = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/hero', {
+      const response = await fetch(`${API_BASE_URL}/api/donations-sections/hero`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +160,7 @@ const CategoriesAdmin = () => {
       const token = localStorage.getItem('token');
       
       const response = await fetch(
-        `https://distinct-stranger-production.up.railway.app/api/donations-sections/categories/${categoryId}`,
+        `${API_BASE_URL}/api/donations-sections/categories/${categoryId}`,
         {
           method: 'DELETE',
           headers: {
@@ -188,7 +204,7 @@ const CategoriesAdmin = () => {
         return;
       }
 
-      const response = await fetch('https://distinct-stranger-production.up.railway.app/api/donations-sections/categories', {
+      const response = await fetch(`${API_BASE_URL}/api/donations-sections/categories`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -228,6 +244,14 @@ const CategoriesAdmin = () => {
         imagePreview: previewUrl
       });
     }
+  };
+
+  // Helper function to get image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('/uploads')) return `${API_BASE_URL}${imagePath}`;
+    return `${API_BASE_URL}/uploads/${imagePath}`;
   };
 
   if (loading) {
@@ -367,9 +391,13 @@ const CategoriesAdmin = () => {
                 >
                   <div className="h-48 overflow-hidden">
                     <img 
-                      src={`https://distinct-stranger-production.up.railway.app${category.image}`}
+                      src={getImageUrl(category.image)}
                       alt={category.title} 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('Failed to load image:', getImageUrl(category.image));
+                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik05NSA5MEg5MFY5NUg5NVY5MFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTEwNSA5MEgxMDBWOTVIMTA1VjkwWiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
+                      }}
                     />
                   </div>
                   <div className="p-6">
@@ -642,7 +670,6 @@ const CategoriesAdmin = () => {
           </div>
         </div>
       )}
-
 
       {/* Edit Hero Content Modal */}
       {showHeroModal && (
