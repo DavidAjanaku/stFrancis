@@ -129,7 +129,7 @@ const ParishSocietiesAdminUI = () => {
   const updateSociety = async (id, updatedData) => {
     try {
       const updatedSociety = await apiRequest(
-        `'https://distinct-stranger-production.up.railway.app/api/parish-societies/${id}`,
+        `https://distinct-stranger-production.up.railway.app/api/parish-societies/${id}`,
         'PUT',
         updatedData
       );
