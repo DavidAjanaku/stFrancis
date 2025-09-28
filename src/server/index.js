@@ -74,24 +74,20 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Create uploads directory paths
-const uploadsPath = path.resolve(process.cwd(), 'uploads'); // Changed from 'src/data/uploads'
-const altUploadsPath = path.resolve(process.cwd(), 'src/data/uploads'); // Keep as fallback
+// Define both upload paths based on debug output
+const uploadsPath = path.resolve(process.cwd(), 'uploads'); // /app/src/server/uploads
+const altUploadsPath = path.resolve(process.cwd(), 'src/data/uploads'); // /app/src/server/src/data/uploads
 
-// Create uploads directory if not exists
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-  console.log('Created uploads directory:', uploadsPath);
-}
+// Create directories if they don't exist
+[uploadsPath, altUploadsPath].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log('Created directory:', dir);
+  }
+});
 
-// Also check for the alternative path
-if (!fs.existsSync(altUploadsPath)) {
-  fs.mkdirSync(altUploadsPath, { recursive: true });
-  console.log('Created alternative uploads directory:', altUploadsPath);
-}
-
-console.log('Main uploads directory:', uploadsPath);
-console.log('Alternative uploads directory:', altUploadsPath);
+console.log('Primary uploads directory:', uploadsPath);
+console.log('Secondary uploads directory:', altUploadsPath);
 
 // Create hero image directory in both locations
 const heroUploadsPath = path.join(uploadsPath, 'hero');
@@ -104,60 +100,62 @@ if (!fs.existsSync(altHeroUploadsPath)) {
   fs.mkdirSync(altHeroUploadsPath, { recursive: true });
 }
 
-// Static file serving middleware - MUST come before API routes
-// Try multiple upload paths to ensure compatibility
-const staticMiddleware = (req, res, next) => {
-  const filePath = req.path.replace('/uploads/', '');
+// Custom static middleware that checks both directories
+app.use('/uploads', (req, res, next) => {
+  const requestedFile = req.path.slice(1); // Remove leading slash
   
-  // Define possible file locations
+  // Define possible file locations in order of preference
   const possiblePaths = [
-    path.join(uploadsPath, filePath),
-    path.join(altUploadsPath, filePath),
-    path.join(__dirname, 'uploads', filePath),
-    path.join(__dirname, '..', 'uploads', filePath),
-    path.join(process.cwd(), 'uploads', filePath)
+    path.join(altUploadsPath, requestedFile), // Check alt path first (where your donation images are)
+    path.join(uploadsPath, requestedFile),     // Then check main path
   ];
 
-  console.log(`Looking for file: ${filePath}`);
+  console.log(`Looking for file: ${requestedFile}`);
   
   // Check each possible path
   for (const fullPath of possiblePaths) {
     if (fs.existsSync(fullPath)) {
       console.log(`File found at: ${fullPath}`);
-      return res.sendFile(fullPath);
+      
+      // Set proper headers
+      res.set('Cache-Control', 'public, max-age=86400'); // 1 day cache
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      
+      return res.sendFile(path.resolve(fullPath));
     }
     console.log(`File not found at: ${fullPath}`);
   }
   
-  // If file not found in any location, continue to next middleware (which will return 404)
-  console.log(`File ${filePath} not found in any location`);
+  // Continue to next middleware if file not found
   next();
-};
+});
 
-// Apply static middleware for /uploads route
-app.use('/uploads', staticMiddleware);
-
-// Alternative: Standard static middleware as fallback
-app.use('/uploads', express.static(uploadsPath, {
+// Serve from the directory with more files as fallback
+app.use('/uploads', express.static(altUploadsPath, {
   maxAge: '1d',
   etag: true,
   lastModified: true,
-  setHeaders: (res, path) => {
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp')) {
-      res.set('Cache-Control', 'public, max-age=86400'); // 1 day for images
-      res.set('Access-Control-Allow-Origin', '*');
+  setHeaders: (res, filePath) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    if (filePath.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+      res.set('Cache-Control', 'public, max-age=86400');
     }
   }
 }));
 
-// Also serve from alternative location
-if (fs.existsSync(altUploadsPath)) {
-  app.use('/uploads', express.static(altUploadsPath, {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-  }));
-}
+// And serve from primary path as final fallback
+app.use('/uploads', express.static(uploadsPath, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  }
+}));
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
@@ -258,7 +256,7 @@ try {
   console.error('Error loading route:', err);
 }
 
-// Debug route to list files in uploads directory
+// Debug routes to help troubleshoot
 app.get('/api/debug/uploads', (req, res) => {
   try {
     const paths = [uploadsPath, altUploadsPath];
@@ -284,6 +282,111 @@ app.get('/api/debug/uploads', (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Debug donation images
+app.get('/api/debug/donation-images', async (req, res) => {
+  try {
+    // Get all donation categories from database
+    const DonationCategory = mongoose.model('DonationCategory');
+    const categories = await DonationCategory.find();
+    
+    // Get all files in both upload directories
+    const primaryFiles = fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath) : [];
+    const altFiles = fs.existsSync(altUploadsPath) ? fs.readdirSync(altUploadsPath) : [];
+    
+    // Compare database entries with actual files
+    const comparison = categories.map(category => {
+      const dbImagePath = category.image;
+      const filename = dbImagePath.replace('/uploads/', '');
+      const fileExistsInPrimary = primaryFiles.includes(filename);
+      const fileExistsInAlt = altFiles.includes(filename);
+      
+      return {
+        categoryId: category._id,
+        title: category.title,
+        dbImagePath,
+        filename,
+        fileExistsInPrimary,
+        fileExistsInAlt,
+        fileExists: fileExistsInPrimary || fileExistsInAlt
+      };
+    });
+    
+    res.json({
+      totalCategories: categories.length,
+      primaryFiles: primaryFiles.length,
+      altFiles: altFiles.length,
+      comparison,
+      allPrimaryFiles: primaryFiles,
+      allAltFiles: altFiles
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack 
+    });
+  }
+});
+
+// Fix image paths if mismatched
+app.post('/api/debug/fix-image-paths', async (req, res) => {
+  try {
+    const DonationCategory = mongoose.model('DonationCategory');
+    const categories = await DonationCategory.find();
+    
+    const primaryFiles = fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath) : [];
+    const altFiles = fs.existsSync(altUploadsPath) ? fs.readdirSync(altUploadsPath) : [];
+    const allFiles = [...primaryFiles, ...altFiles];
+    
+    const fixes = [];
+    
+    for (const category of categories) {
+      const dbFilename = category.image.replace('/uploads/', '');
+      const fileExists = allFiles.includes(dbFilename);
+      
+      if (!fileExists) {
+        // Try to find a matching file (by prefix)
+        const prefix = dbFilename.split('-').slice(0, 2).join('-'); // e.g., "donation-1757580877448"
+        const matchingFile = allFiles.find(file => file.startsWith(prefix));
+        
+        if (matchingFile) {
+          // Update the database with the correct filename
+          await DonationCategory.findByIdAndUpdate(category._id, {
+            image: `/uploads/${matchingFile}`
+          });
+          
+          fixes.push({
+            categoryId: category._id,
+            title: category.title,
+            oldPath: category.image,
+            newPath: `/uploads/${matchingFile}`,
+            fixed: true
+          });
+        } else {
+          fixes.push({
+            categoryId: category._id,
+            title: category.title,
+            oldPath: category.image,
+            error: 'No matching file found',
+            fixed: false
+          });
+        }
+      }
+    }
+    
+    res.json({
+      message: 'Image path fixing completed',
+      fixes
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 });
 
@@ -321,7 +424,9 @@ app.get('/test', (req, res) => {
     message: 'Server is working!',
     timestamp: new Date().toISOString(),
     uploadsPath: uploadsPath,
-    uploadsExists: fs.existsSync(uploadsPath)
+    uploadsExists: fs.existsSync(uploadsPath),
+    altUploadsPath: altUploadsPath,
+    altUploadsExists: fs.existsSync(altUploadsPath)
   });
 });
 
@@ -331,11 +436,29 @@ app.options('*', cors(corsOptions));
 // 404 handler
 app.use((req, res, next) => {
   console.log(`404 - Route not found: ${req.method} ${req.path}`);
-  res.status(404).json({
-    message: 'Route not found',
-    path: req.path,
-    method: req.method
-  });
+  
+  // If it's an upload request that wasn't found, provide helpful info
+  if (req.path.startsWith('/uploads/')) {
+    const filename = req.path.replace('/uploads/', '');
+    const primaryFiles = fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath) : [];
+    const altFiles = fs.existsSync(altUploadsPath) ? fs.readdirSync(altUploadsPath) : [];
+    
+    res.status(404).json({
+      message: 'File not found',
+      path: req.path,
+      filename: filename,
+      availableFiles: {
+        primary: primaryFiles.filter(f => f.includes('donation')),
+        alt: altFiles.filter(f => f.includes('donation'))
+      }
+    });
+  } else {
+    res.status(404).json({
+      message: 'Route not found',
+      path: req.path,
+      method: req.method
+    });
+  }
 });
 
 // Error handling middleware
@@ -381,13 +504,17 @@ const startServer = async () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
-      console.log(`Uploads directory: ${uploadsPath}`);
-      console.log(`Alternative uploads directory: ${altUploadsPath}`);
+      console.log(`Primary uploads directory: ${uploadsPath}`);
+      console.log(`Secondary uploads directory: ${altUploadsPath}`);
       
-      // Log existing files
+      // Log existing files in both directories
       if (fs.existsSync(uploadsPath)) {
         const files = fs.readdirSync(uploadsPath);
-        console.log(`Found ${files.length} files in uploads directory`);
+        console.log(`Found ${files.length} files in primary uploads directory`);
+      }
+      if (fs.existsSync(altUploadsPath)) {
+        const files = fs.readdirSync(altUploadsPath);
+        console.log(`Found ${files.length} files in secondary uploads directory`);
         if (files.length > 0) {
           console.log('Sample files:', files.slice(0, 3));
         }

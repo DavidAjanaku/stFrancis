@@ -16,13 +16,27 @@ const DonationPage = () => {
   const [error, setError] = useState(null);
   const [copiedAccount, setCopiedAccount] = useState(null);
 
-  // Base URL for your API
-  const API_BASE_URL = 'https://distinct-stranger-production.up.railway.app';
+  // Get the base URL dynamically based on environment
+  const getApiBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      // In browser environment
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5001'; // Local development
+      }
+      // Production - use current domain
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+    // Fallback for SSR or other environments
+    return 'https://distinct-stranger-production.up.railway.app';
+  };
+
+  const API_BASE_URL = getApiBaseUrl();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
         // Fetch donation categories
         const categoriesResponse = await fetch(`${API_BASE_URL}/api/donations-sections/categories`);
         if (!categoriesResponse.ok) throw new Error('Failed to fetch donation categories');
@@ -36,6 +50,7 @@ const DonationPage = () => {
         if (!heroResponse.ok) throw new Error('Failed to fetch hero content');
         const heroData = await heroResponse.json();
         setHeroContent(heroData);
+        
       } catch (err) {
         setError('Failed to load donation data. Please try again later.');
         console.error('Fetch error:', err);
@@ -45,15 +60,20 @@ const DonationPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [API_BASE_URL]);
 
   // Helper function to construct full image URL
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
+    
     // If the path already includes the domain, return as is
     if (imagePath.startsWith('http')) return imagePath;
+    
     // If it starts with /uploads, prepend the API base URL
-    if (imagePath.startsWith('/uploads')) return `${API_BASE_URL}${imagePath}`;
+    if (imagePath.startsWith('/uploads')) {
+      return `${API_BASE_URL}${imagePath}`;
+    }
+    
     // Otherwise, assume it's a relative path and construct full URL
     return `${API_BASE_URL}/uploads/${imagePath}`;
   };
@@ -66,6 +86,25 @@ const DonationPage = () => {
       setTimeout(() => setCopiedAccount(null), 2000);
     } catch (err) {
       console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const handleImageError = (e, category) => {
+    console.error('Failed to load image for category:', category.title, e.target.src);
+    e.target.style.display = 'none';
+    // Show placeholder
+    const placeholder = e.target.nextSibling;
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+    }
+  };
+
+  const handleImageLoad = (e) => {
+    console.log('Image loaded successfully:', e.target.src);
+    // Hide placeholder if image loads successfully
+    const placeholder = e.target.nextSibling;
+    if (placeholder) {
+      placeholder.style.display = 'none';
     }
   };
 
@@ -176,21 +215,18 @@ const DonationPage = () => {
                 >
                   {/* Image */}
                   <div className="relative h-64 overflow-hidden">
-                    {imageUrl ? (
+                    {imageUrl && (
                       <img
                         src={imageUrl}
                         alt={category.title}
                         className="w-full h-full object-cover transform transition-transform duration-300 hover:scale-110"
-                        onLoad={() => console.log('Image loaded successfully:', imageUrl)}
-                        onError={(e) => {
-                          console.error('Failed to load image:', imageUrl);
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
+                        onLoad={(e) => handleImageLoad(e)}
+                        onError={(e) => handleImageError(e, category)}
                       />
-                    ) : null}
+                    )}
+                    {/* Placeholder - shown when image fails to load or while loading */}
                     <div 
-                      className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300"
+                      className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300"
                       style={{ display: imageUrl ? 'none' : 'flex' }}
                     >
                       <div className="text-center">
@@ -207,7 +243,7 @@ const DonationPage = () => {
                             d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                           />
                         </svg>
-                        <span className="text-gray-400 text-sm">No image available</span>
+                        <span className="text-gray-400 text-sm">Image loading...</span>
                       </div>
                     </div>
                     <div
