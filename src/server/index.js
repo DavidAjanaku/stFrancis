@@ -7,6 +7,21 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
+// Routes
+import authRoutes from './routes/auth.js';
+import massScheduleRoutes from './routes/massSchedule.js';
+import aboutSectionRoutes from './routes/aboutSectionRoutes.js';
+import eventsRoutes from './routes/events.js';
+import galleryRouter from './routes/gallery.js';
+import prayerRequestRoutes from './routes/prayerRequests.js';
+import donationSectionRoutes from './routes/postSectionRoutes.js';
+import donationROutes from './routes/donationSectionRoutes.js';
+import liturgicalCalendarRoutes from './routes/liturgicalCalendarRoutes.js';
+import heroSlideRoutes from './routes/heroSlideRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
+import footerRoutes from './routes/footerRoutes.js';
+import parishSocietyRoutes from './routes/parishSocietyRoutes.js';
+
 dotenv.config();
 
 const app = express();
@@ -16,14 +31,14 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Simple CORS Configuration
+// Enhanced CORS Configuration
 const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'https://distinct-stranger-production.up.railway.app',
     'https://stfrancis-1.onrender.com',
-    'https://stfrancis-52b1.onrender.com',
+    'https://stfrancis-52b1.onrender.com/',
     'https://st-francis-cc-oregun.ng'
   ],
   credentials: true,
@@ -33,62 +48,164 @@ const corsOptions = {
     'Authorization', 
     'Accept',
     'Origin',
-    'X-Requested-With'
+    'X-Requested-With',
+    'Cache-Control',
+    'Pragma',
+    'Expires',
+    'If-None-Match',
+    'If-Modified-Since'
   ],
-  optionsSuccessStatus: 200
+  exposedHeaders: [
+    'Content-Length', 
+    'Content-Type',
+    'Cache-Control',
+    'ETag',
+    'Last-Modified'
+  ],
+  optionsSuccessStatus: 200,
+  maxAge: 86400, // 24 hours preflight cache
 };
 
 // Middleware
 app.use(cors(corsOptions));
+
+// Body parsing middleware (before static files)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Create uploads directory paths
+const uploadsPath = path.resolve(process.cwd(), 'uploads'); // Changed from 'src/data/uploads'
+const altUploadsPath = path.resolve(process.cwd(), 'src/data/uploads'); // Keep as fallback
 
-// Simple upload directory setup
-const uploadsPath = path.resolve(process.cwd(), 'uploads');
-const altUploadsPath = path.resolve(process.cwd(), 'src/data/uploads');
+// Create uploads directory if not exists
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log('Created uploads directory:', uploadsPath);
+}
 
-// Create directories
-[uploadsPath, altUploadsPath].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log('Created directory:', dir);
-  }
-});
+// Also check for the alternative path
+if (!fs.existsSync(altUploadsPath)) {
+  fs.mkdirSync(altUploadsPath, { recursive: true });
+  console.log('Created alternative uploads directory:', altUploadsPath);
+}
 
-// Simple static file serving
-app.use('/uploads', (req, res, next) => {
-  const requestedFile = req.path.slice(1);
+console.log('Main uploads directory:', uploadsPath);
+console.log('Alternative uploads directory:', altUploadsPath);
+
+// Create hero image directory in both locations
+const heroUploadsPath = path.join(uploadsPath, 'hero');
+const altHeroUploadsPath = path.join(altUploadsPath, 'hero');
+
+if (!fs.existsSync(heroUploadsPath)) {
+  fs.mkdirSync(heroUploadsPath, { recursive: true });
+}
+if (!fs.existsSync(altHeroUploadsPath)) {
+  fs.mkdirSync(altHeroUploadsPath, { recursive: true });
+}
+
+// Static file serving middleware - MUST come before API routes
+// Try multiple upload paths to ensure compatibility
+const staticMiddleware = (req, res, next) => {
+  const filePath = req.path.replace('/uploads/', '');
+  
+  // Define possible file locations
   const possiblePaths = [
-    path.join(altUploadsPath, requestedFile),
-    path.join(uploadsPath, requestedFile)
+    path.join(uploadsPath, filePath),
+    path.join(altUploadsPath, filePath),
+    path.join(__dirname, 'uploads', filePath),
+    path.join(__dirname, '..', 'uploads', filePath),
+    path.join(process.cwd(), 'uploads', filePath)
   ];
 
+  console.log(`Looking for file: ${filePath}`);
+  
+  // Check each possible path
   for (const fullPath of possiblePaths) {
     if (fs.existsSync(fullPath)) {
-      res.set('Access-Control-Allow-Origin', '*');
-      return res.sendFile(path.resolve(fullPath));
+      console.log(`File found at: ${fullPath}`);
+      return res.sendFile(fullPath);
     }
+    console.log(`File not found at: ${fullPath}`);
   }
+  
+  // If file not found in any location, continue to next middleware (which will return 404)
+  console.log(`File ${filePath} not found in any location`);
   next();
-});
+};
 
-app.use('/uploads', express.static(altUploadsPath, {
-  setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*');
+// Apply static middleware for /uploads route
+app.use('/uploads', staticMiddleware);
+
+// Alternative: Standard static middleware as fallback
+app.use('/uploads', express.static(uploadsPath, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp')) {
+      res.set('Cache-Control', 'public, max-age=86400'); // 1 day for images
+      res.set('Access-Control-Allow-Origin', '*');
+    }
   }
 }));
 
-// Database Connection
+// Also serve from alternative location
+if (fs.existsSync(altUploadsPath)) {
+  app.use('/uploads', express.static(altUploadsPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+  }));
+}
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  
+  // Special logging for upload requests
+  if (req.path.startsWith('/uploads/')) {
+    console.log(`Upload request for: ${req.path}`);
+    console.log(`Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  }
+  
+  next();
+});
+
+// Add cache control middleware for static assets and API responses
+app.use((req, res, next) => {
+  // Set cache headers for static assets
+  if (req.path.startsWith('/uploads/')) {
+    res.set('Cache-Control', 'public, max-age=86400'); // 1 day for images
+    res.set('ETag', `"${Date.now()}"`);
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  }
+  
+  // Set cache headers for API routes that can be cached
+  if (req.path.includes('/api/hero-slides') && req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes for hero slides
+  }
+  
+  if (req.path.includes('/api/about-section') && req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=600'); // 10 minutes for about section
+  }
+  
+  if (req.path.includes('/api/footer') && req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes for footer
+  }
+  
+  next();
+});
+
+// Database Connection with connection pooling
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     });
     console.log('MongoDB connected successfully');
   } catch (error) {
@@ -97,149 +214,104 @@ const connectDB = async () => {
   }
 };
 
-// Import routes with error handling
-const loadRoutes = async () => {
-  try {
-    console.log('Loading routes...');
+// Routes with error handling - AFTER static file middleware
+try {
+  app.use('/api/auth', authRoutes);
+  console.log('authRoutes loaded');
 
-    // Import routes one by one with error handling
-    try {
-      const authRoutes = await import('./routes/auth.js');
-      app.use('/api/auth', authRoutes.default);
-      console.log('✓ Auth routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load auth routes:', err.message);
-    }
+  app.use('/api/mass-schedule', massScheduleRoutes);
+  console.log('massScheduleRoutes loaded');
 
-    try {
-      const massScheduleRoutes = await import('./routes/massSchedule.js');
-      app.use('/api/mass-schedule', massScheduleRoutes.default);
-      console.log('✓ Mass schedule routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load mass schedule routes:', err.message);
-    }
+  app.use('/api/about-section', aboutSectionRoutes);
+  console.log('aboutSectionRoutes loaded');
 
-    try {
-      const aboutSectionRoutes = await import('./routes/aboutSectionRoutes.js');
-      app.use('/api/about-section', aboutSectionRoutes.default);
-      console.log('✓ About section routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load about section routes:', err.message);
-    }
+  app.use('/api/events', eventsRoutes);
+  console.log('eventsRoutes loaded');
 
-    try {
-      const eventsRoutes = await import('./routes/events.js');
-      app.use('/api/events', eventsRoutes.default);
-      console.log('✓ Events routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load events routes:', err.message);
-    }
+  app.use('/api/gallery', galleryRouter);
+  console.log('galleryRouter loaded');
 
-    try {
-      const galleryRouter = await import('./routes/gallery.js');
-      app.use('/api/gallery', galleryRouter.default);
-      console.log('✓ Gallery routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load gallery routes:', err.message);
-    }
+  app.use('/api/prayer-requests', prayerRequestRoutes);
+  console.log('prayerRequestRoutes loaded');
 
-    try {
-      const prayerRequestRoutes = await import('./routes/prayerRequests.js');
-      app.use('/api/prayer-requests', prayerRequestRoutes.default);
-      console.log('✓ Prayer request routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load prayer request routes:', err.message);
-    }
+  app.use('/api/donation-sections', donationSectionRoutes);
+  console.log('donationSectionRoutes loaded');
 
-    try {
-      const donationSectionRoutes = await import('./routes/postSectionRoutes.js');
-      app.use('/api/donation-sections', donationSectionRoutes.default);
-      console.log('✓ Donation section routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load donation section routes:', err.message);
-    }
+  app.use('/api/liturgical-calendar', liturgicalCalendarRoutes);
+  console.log('liturgicalCalendarRoutes loaded');
 
-    try {
-      const liturgicalCalendarRoutes = await import('./routes/liturgicalCalendarRoutes.js');
-      app.use('/api/liturgical-calendar', liturgicalCalendarRoutes.default);
-      console.log('✓ Liturgical calendar routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load liturgical calendar routes:', err.message);
-    }
+  app.use('/api/hero-slides', heroSlideRoutes);
+  console.log('heroSlideRoutes loaded');
 
-    try {
-      const heroSlideRoutes = await import('./routes/heroSlideRoutes.js');
-      app.use('/api/hero-slides', heroSlideRoutes.default);
-      console.log('✓ Hero slide routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load hero slide routes:', err.message);
-    }
+  app.use('/api/contact', contactRoutes);
+  console.log('contactRoutes loaded');
 
-    try {
-      const contactRoutes = await import('./routes/contactRoutes.js');
-      app.use('/api/contact', contactRoutes.default);
-      console.log('✓ Contact routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load contact routes:', err.message);
-    }
+  app.use('/api/footer', footerRoutes);
+  console.log('footerRoutes loaded');
 
-    try {
-      const footerRoutes = await import('./routes/footerRoutes.js');
-      app.use('/api/footer', footerRoutes.default);
-      console.log('✓ Footer routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load footer routes:', err.message);
-    }
+  app.use('/api/donations-sections', donationROutes);
+  console.log('donationROutes loaded');
 
-    try {
-      const donationROutes = await import('./routes/donationSectionRoutes.js');
-      app.use('/api/donations-sections', donationROutes.default);
-      console.log('✓ Donation routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load donation routes:', err.message);
-    }
+  app.use('/api/parish-societies', parishSocietyRoutes);
+  console.log('parishSocietyRoutes loaded');
+} catch (err) {
+  console.error('Error loading route:', err);
+}
 
-    try {
-      const parishSocietyRoutes = await import('./routes/parishSocietyRoutes.js');
-      app.use('/api/parish-societies', parishSocietyRoutes.default);
-      console.log('✓ Parish society routes loaded');
-    } catch (err) {
-      console.error('✗ Failed to load parish society routes:', err.message);
-    }
-
-    console.log('Route loading completed');
-  } catch (error) {
-    console.error('Critical error in route loading:', error);
-  }
-};
-
-// Debug routes
+// Debug route to list files in uploads directory
 app.get('/api/debug/uploads', (req, res) => {
   try {
-    const result = {
-      uploadsPath: {
-        path: uploadsPath,
-        exists: fs.existsSync(uploadsPath),
-        files: fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath).slice(0, 10) : []
-      },
-      altUploadsPath: {
-        path: altUploadsPath,
-        exists: fs.existsSync(altUploadsPath),
-        files: fs.existsSync(altUploadsPath) ? fs.readdirSync(altUploadsPath).slice(0, 10) : []
+    const paths = [uploadsPath, altUploadsPath];
+    const result = {};
+    
+    paths.forEach((dirPath, index) => {
+      if (fs.existsSync(dirPath)) {
+        const files = fs.readdirSync(dirPath);
+        result[`path_${index}`] = {
+          path: dirPath,
+          exists: true,
+          files: files.length,
+          fileList: files.slice(0, 10) // Show first 10 files
+        };
+      } else {
+        result[`path_${index}`] = {
+          path: dirPath,
+          exists: false
+        };
       }
-    };
+    });
+    
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Health check
+// Cleanup old mass schedules
+const scheduleCleanup = async () => {
+  try {
+    const schedules = await mongoose.model('MassSchedule').find().sort({ createdAt: -1 });
+    if (schedules.length > 5) {
+      const idsToDelete = schedules.slice(5).map((s) => s._id);
+      await mongoose.model('MassSchedule').deleteMany({
+        _id: { $in: idsToDelete },
+      });
+      console.log(`Cleaned up ${idsToDelete.length} old mass schedules`);
+    }
+  } catch (error) {
+    console.error('Schedule cleanup error:', error);
+  }
+};
+
+// Health check route with detailed info
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok',
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    uptime: process.uptime(),
+    uploadsPath: uploadsPath,
+    altUploadsPath: altUploadsPath
   });
 });
 
@@ -247,12 +319,17 @@ app.get('/api/health', (req, res) => {
 app.get('/test', (req, res) => {
   res.json({ 
     message: 'Server is working!',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uploadsPath: uploadsPath,
+    uploadsExists: fs.existsSync(uploadsPath)
   });
 });
 
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
 // 404 handler
-app.use((req, res) => {
+app.use((req, res, next) => {
   console.log(`404 - Route not found: ${req.method} ${req.path}`);
   res.status(404).json({
     message: 'Route not found',
@@ -261,33 +338,63 @@ app.use((req, res) => {
   });
 });
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Error message:', err.message);
+  console.error('Request path:', req.path);
+  console.error('Request method:', req.method);
+  
   res.status(err.status || 500).json({
     message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  await mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully');
+  await mongoose.connection.close();
+  process.exit(0);
 });
 
 // Start server
 const startServer = async () => {
   try {
-    console.log('Starting server...');
-    
     await connectDB();
-    console.log('✓ Database connected');
-    
-    await loadRoutes();
-    console.log('✓ Routes loaded');
+
+    await scheduleCleanup(); // Initial cleanup
+
+    // Schedule daily cleanup
+    setInterval(scheduleCleanup, 24 * 60 * 60 * 1000);
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`✓ Server running on port ${PORT}`);
-      console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`✓ CORS enabled for localhost:5173`);
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
+      console.log(`Uploads directory: ${uploadsPath}`);
+      console.log(`Alternative uploads directory: ${altUploadsPath}`);
+      
+      // Log existing files
+      if (fs.existsSync(uploadsPath)) {
+        const files = fs.readdirSync(uploadsPath);
+        console.log(`Found ${files.length} files in uploads directory`);
+        if (files.length > 0) {
+          console.log('Sample files:', files.slice(0, 3));
+        }
+      }
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
